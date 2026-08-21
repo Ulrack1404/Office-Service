@@ -1131,7 +1131,7 @@
 
 				try {
 					loaderText.textContent = 'Загрузка словаря...';
-					const response = await fetch('/lib/ru_RU.dic');
+					const response = await fetch('lib/ru_RU.dic');
 
 					if (!response.ok) {
 						throw new Error(`HTTP ${response.status} — файл не найден`);
