@@ -1,0 +1,838 @@
+<!-- Office-Service/OCR-to-PDF/index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR с PDF-файла</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 0;
+            color: #212529;
+        }
+
+        .app-card {
+            max-width: 100%;
+            width: 100%;
+            background: white;
+            padding: 0;
+        }
+
+        h1 {
+            font-weight: 500;
+            font-size: 28px;
+            color: #212529;
+            margin-bottom: 6px;
+            padding: 0 4px;
+        }
+
+        .lead {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        /* ===== DRAG & DROP ЗОНА ===== */
+        .drop-zone {
+            border: 2px dashed #ced4da;
+            border-radius: 4px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.2s;
+            cursor: pointer;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone:hover {
+            border-color: #80bdff;
+            background: #e9ecef;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #007bff;
+            background: #cfe2ff;
+            box-shadow: inset 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        .drop-zone.drag-over .drop-zone-icon {
+            transform: scale(1.1);
+        }
+
+        .drop-zone-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .drop-zone-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .drop-zone-text strong {
+            color: #007bff;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .drop-zone-hint {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* ===== КАРТОЧКА ===== */
+        .card {
+            background: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 20px 22px 18px;
+            margin-bottom: 24px;
+        }
+
+        /* ===== ПРЕВЬЮ PDF ===== */
+        .pdf-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .pdf-page {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #f8f9fa;
+        }
+
+        .pdf-page img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .pdf-page-label {
+            text-align: center;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: #6c757d;
+            background: #e9ecef;
+        }
+
+        /* ===== СТАТУС ===== */
+        .text-muted {
+            color: #6c757d;
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 1.8rem;
+        }
+
+        /* ===== РЕЗУЛЬТАТ ===== */
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 15px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .copy-feedback {
+            background-color: #2b8c5e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+        }
+
+        .alert {
+            position: relative;
+            padding: 16px 20px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            color: #212529;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: none;
+            font-size: 15px;
+            min-height: 60px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        /* ===== ИНФОРМАЦИЯ О ФАЙЛЕ ===== */
+        .file-info {
+            display: none;
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #495057;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-info .file-name {
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-info .file-size {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .file-info .file-remove {
+            cursor: pointer;
+            color: #d0314e;
+            font-weight: bold;
+            padding: 0 8px;
+            transition: color 0.2s;
+        }
+
+        .file-info .file-remove:hover {
+            color: #a71d2a;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn img {
+            display: inline-block;
+            height: 18px;
+            width: 18px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #2b8c5e;
+            border-color: #2b8c5e;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background-color: #1e6b47;
+            border-color: #1a5f3f;
+        }
+
+        .btn-outline-secondary {
+            color: #212529;
+            background-color: transparent;
+            border-color: #ced4da;
+        }
+
+        .btn-outline-secondary:hover:not(:disabled) {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 14px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #212529;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== ACTION BAR ===== */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 16px 20px;
+            margin: 8px 0 20px;
+        }
+
+        .action-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .drop-zone {
+                padding: 30px 16px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .result-actions {
+                justify-content: flex-start;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar-left {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .pdf-preview {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-card">
+        <h1>Распознавание текста из PDF</h1>
+        <p class="lead">Перетащите PDF-файл или нажмите для выбора</p>
+
+        <!-- Карточка с загрузкой -->
+        <div class="card">
+            <div class="drop-zone" id="dropZone_ocr_pdf">
+                <span class="drop-zone-icon">📄</span>
+                <div class="drop-zone-text">
+                    <strong>Нажмите</strong> для выбора PDF или <strong>перетащите</strong> файл сюда
+                </div>
+                <div class="drop-zone-hint">Поддерживаются: PDF (сканированные копии)</div>
+                <input type="file" id="fileInput" accept=".pdf">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <span class="file-name" id="fileName">document.pdf</span>
+                <span class="file-size" id="fileSize">2.4 МБ</span>
+                <span class="file-remove" id="fileRemove" title="Удалить файл">✕</span>
+            </div>
+
+            <div id="pdfPreview" class="pdf-preview"></div>
+
+            <div id="progress" class="text-muted">Ожидание загрузки...</div>
+        </div>
+
+        <!-- Карточка с результатом -->
+        <div class="card">
+            <!-- Action Bar с кнопкой Очистить -->
+            <div class="action-bar">
+                <div class="action-bar-left">
+                    <button class="btn btn-outline-secondary" id="clearBtn_pdf"><img src="/img/clear.png" alt="">
+                        Очистить</button>
+                </div>
+            </div>
+
+            <div class="result-header" id="resultHeader" style="display: none;">
+                <span class="result-label">📝 Распознанный текст:</span>
+                <div class="result-actions">
+                    <span id="copyFeedback" class="copy-feedback">✅ Скопировано!</span>
+                    <button id="copyBtn_pdf" class="btn btn-success btn-sm"><img src="/img/copy.png" alt="">
+                        Копировать</button>
+                    <button id="downloadBtn_pdf" class="btn btn-primary btn-sm">💾 Скачать .txt</button>
+                </div>
+            </div>
+            <div id="result" class="alert">
+                Результат появится здесь
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">✅ Скопировано!</div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            // Элементы
+            const dropZone = document.getElementById('dropZone_ocr_pdf');
+            const fileInput = document.getElementById('fileInput');
+            const progressDiv = document.getElementById('progress');
+            const resultDiv = document.getElementById('result');
+            const resultHeader = document.getElementById('resultHeader');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const fileRemove = document.getElementById('fileRemove');
+            const pdfPreview = document.getElementById('pdfPreview');
+            const copyBtn = document.getElementById('copyBtn_pdf');
+            const downloadBtn = document.getElementById('downloadBtn_pdf');
+            const clearBtn = document.getElementById('clearBtn_pdf');
+            const copyFeedback = document.getElementById('copyFeedback');
+            const toast = document.getElementById('toast');
+
+            let selectedFile = null;
+            let isProcessing = false;
+            let copyTimeout = null;
+            let toastTimeout = null;
+            let currentText = '';
+            let pdfDataCache = null;
+
+            // --- ПОКАЗ TOAST ---
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            // --- ФУНКЦИЯ ПОСТ-ОБРАБОТКИ ТЕКСТА ---
+            function postProcessText(text) {
+                let lines = text.split('\n');
+                lines = lines.filter(line => line.trim() !== '');
+
+                if (lines.length < 2) return lines.join('\n');
+
+                let result = [];
+                let currentLine = '';
+
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (i === 0) {
+                        currentLine = line;
+                        continue;
+                    }
+                    const endsWithSentenceEnd = /[.!?…]\s*$/.test(currentLine);
+                    if (endsWithSentenceEnd) {
+                        result.push(currentLine);
+                        currentLine = line;
+                    } else {
+                        currentLine += ' ' + line;
+                    }
+                }
+                if (currentLine) result.push(currentLine);
+                return result.join('\n');
+            }
+
+            // --- РЕНДЕРИНГ PDF СТРАНИЦ ---
+            async function renderPDFPages(pdf) {
+                try {
+                    const pageCount = pdf.numPages;
+                    pdfPreview.innerHTML = '';
+
+                    for (let i = 1; i <= pageCount; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 1.5 });
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        await page.render(renderContext).promise;
+
+                        const pageDiv = document.createElement('div');
+                        pageDiv.className = 'pdf-page';
+
+                        const img = document.createElement('img');
+                        img.src = canvas.toDataURL('image/png');
+                        img.alt = `Страница ${i}`;
+
+                        const label = document.createElement('div');
+                        label.className = 'pdf-page-label';
+                        label.textContent = `Страница ${i} из ${pageCount}`;
+
+                        pageDiv.appendChild(img);
+                        pageDiv.appendChild(label);
+                        pdfPreview.appendChild(pageDiv);
+                    }
+
+                    return pageCount;
+                } catch (error) {
+                    console.error('Ошибка рендеринга PDF:', error);
+                    throw new Error('Не удалось прочитать PDF файл. Возможно, файл поврежден.');
+                }
+            }
+
+            // --- ФУНКЦИЯ РАСПОЗНАВАНИЯ ---
+            async function recognizePDF(file) {
+                if (isProcessing || !file) return;
+
+                isProcessing = true;
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+                progressDiv.textContent = '⏳ Чтение PDF...';
+                currentText = '';
+                pdfDataCache = null;
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const dataCopy = new Uint8Array(arrayBuffer);
+                    pdfDataCache = dataCopy.slice(0);
+
+                    const pdf = await pdfjsLib.getDocument({ data: pdfDataCache }).promise;
+                    const pageCount = await renderPDFPages(pdf);
+
+                    let allText = '';
+                    let processedPages = 0;
+
+                    for (let i = 1; i <= pageCount; i++) {
+                        progressDiv.textContent = `⏳ Распознавание страницы ${i} из ${pageCount}...`;
+
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2.0 });
+
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+
+                        await page.render(renderContext).promise;
+
+                        const imageData = canvas.toDataURL('image/png');
+
+                        const result = await Tesseract.recognize(
+                            imageData,
+                            'rus+eng',
+                            {
+                                logger: (m) => {
+                                    if (m.status === 'recognizing text') {
+                                        progressDiv.textContent = `⏳ Страница ${i}/${pageCount}: ${Math.round(m.progress * 100)}%`;
+                                    }
+                                }
+                            }
+                        );
+
+                        const pageText = result.data.text.trim();
+                        if (pageText) {
+                            allText += `--- Страница ${i} ---\n${pageText}\n\n`;
+                        }
+
+                        processedPages++;
+                        canvas.width = 0;
+                        canvas.height = 0;
+                    }
+
+                    const processedText = postProcessText(allText);
+                    currentText = processedText;
+
+                    if (processedText.trim().length === 0) {
+                        resultDiv.textContent = '⚠️ Текст не обнаружен. Убедитесь, что PDF содержит сканированные страницы с текстом.';
+                        resultDiv.classList.add('show');
+                        resultHeader.style.display = 'none';
+                        progressDiv.textContent = '⚠️ Текст не найден';
+                    } else {
+                        resultDiv.textContent = processedText;
+                        resultDiv.classList.add('show');
+                        resultHeader.style.display = 'flex';
+                        progressDiv.textContent = `✅ Распознавание завершено. Обработано ${processedPages} страниц.`;
+                    }
+                } catch (err) {
+                    console.error('Ошибка распознавания:', err);
+                    progressDiv.textContent = '❌ Ошибка: ' + err.message;
+                    resultDiv.textContent = 'Произошла ошибка: ' + err.message;
+                    resultDiv.classList.add('show');
+                    resultHeader.style.display = 'none';
+                } finally {
+                    isProcessing = false;
+                    pdfDataCache = null;
+                }
+            }
+
+            // --- КОПИРОВАНИЕ ТЕКСТА ---
+            function copyText() {
+                if (!currentText) {
+                    showToast('⚠️ Нет текста для копирования');
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(currentText).then(() => {
+                        showToast('✅ Скопировано!');
+                    }).catch(() => {
+                        fallbackCopy(currentText);
+                    });
+                } else {
+                    fallbackCopy(currentText);
+                }
+            }
+
+            function fallbackCopy(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('✅ Скопировано!');
+                } catch (err) {
+                    console.error('Ошибка копирования:', err);
+                    showToast('❌ Ошибка копирования');
+                }
+                document.body.removeChild(textarea);
+            }
+
+            // --- СКАЧИВАНИЕ TXT ---
+            function downloadTxt() {
+                if (!currentText) return;
+
+                const blob = new Blob([currentText], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName.textContent.replace('.pdf', '.txt');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // --- ФОРМАТИРОВАНИЕ РАЗМЕРА ---
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' Б';
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' КБ';
+                if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' МБ';
+                return (bytes / 1073741824).toFixed(1) + ' ГБ';
+            }
+
+            // --- ОБРАБОТКА ФАЙЛА ---
+            function handleFile(file) {
+                if (!file) return;
+
+                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                    progressDiv.textContent = '❌ Пожалуйста, выберите PDF файл';
+                    return;
+                }
+
+                selectedFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.add('show');
+
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+                pdfPreview.innerHTML = '';
+                currentText = '';
+
+                progressDiv.textContent = '✅ Файл загружен. Начинаю распознавание...';
+                recognizePDF(file);
+            }
+
+            // --- СБРОС UI ---
+            function resetUI() {
+                selectedFile = null;
+                progressDiv.textContent = 'Ожидание загрузки...';
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+                fileInfo.classList.remove('show');
+                pdfPreview.innerHTML = '';
+                fileInput.value = '';
+                isProcessing = false;
+                currentText = '';
+                pdfDataCache = null;
+                copyFeedback.classList.remove('show');
+                clearTimeout(copyTimeout);
+            }
+
+            // --- ОБРАБОТЧИК КНОПКИ ОЧИСТИТЬ ---
+            clearBtn.addEventListener('click', function () {
+                resetUI();
+                showToast('🧹 Очищено');
+            });
+
+            // --- DRAG & DROP ---
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropZone.classList.add('drag-over');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('drag-over');
+            }
+
+            dropZone.addEventListener('drop', function (e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }, false);
+
+            dropZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFile(file);
+                } else {
+                    resetUI();
+                }
+            });
+
+            fileRemove.addEventListener('click', function (e) {
+                e.stopPropagation();
+                resetUI();
+            });
+
+            copyBtn.addEventListener('click', copyText);
+            downloadBtn.addEventListener('click', downloadTxt);
+
+            document.addEventListener('drop', function (e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type === 'application/pdf') {
+                    if (!e.target.closest('#dropZone_ocr_pdf')) {
+                        handleFile(files[0]);
+                    }
+                }
+            });
+
+        })();
+    </script>
+
+</body>
+
+</html>

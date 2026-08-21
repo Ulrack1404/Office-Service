@@ -1,0 +1,831 @@
+<!-- Office-Service/index.html -->
+
+<!DOCTYPE html>
+<html lang="ru">
+<script>
+    if (typeof module === 'undefined') {
+        window.module = {};
+        window.module.exports = {};
+    }
+</script>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./img/fav.png">
+    <title>Офисные сервисы</title>
+
+    <script src="./lib/diff-match-patch.min.js"></script>
+    <script src="./lib/tesseract.min.js"></script>
+    <script src="./lib/jszip.min.js"></script>
+    <script src="./lib/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = './lib/pdf.worker.min.js'</script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            min-width: 250px;
+            background: #eef2f6;
+            border-right: 1px solid #d1d9e0;
+            display: flex;
+            flex-direction: column;
+            padding: 28px 16px 16px 16px;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar.collapsed {
+            width: 60px;
+            min-width: 60px;
+            padding: 28px 8px 16px 8px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #d1d9e0;
+            letter-spacing: -0.3px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .sidebar-header .sidebar-logo {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .sidebar-header span {
+            color: #3b82f6;
+        }
+
+        .sidebar-header:hover {
+            opacity: 0.7;
+        }
+
+        .sidebar.collapsed .sidebar-header {
+            font-size: 0;
+            padding: 0;
+            margin-bottom: 16px;
+            border-bottom: none;
+            gap: 0;
+            justify-content: center;
+        }
+
+        .sidebar.collapsed .sidebar-header .sidebar-logo {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sidebar.collapsed .sidebar-header span {
+            display: none;
+        }
+
+        .sidebar-toggle-wrapper {
+            margin-top: auto;
+            padding-top: 16px;
+            display: flex;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-toggle-wrapper {
+            padding-top: 8px;
+        }
+
+        .sidebar-toggle {
+            width: 100%;
+            max-width: 200px;
+            height: 32px;
+            border-radius: 6px;
+            background: #6b7a8f;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+
+        .sidebar-toggle:hover {
+            background: #5a6a7e;
+            transform: scale(1.02);
+        }
+
+        .sidebar.collapsed .sidebar-toggle {
+            max-width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            gap: 0;
+            font-size: 0;
+        }
+
+        .sidebar-toggle .toggle-icon {
+            display: inline-block;
+            transition: transform 0.3s ease;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .sidebar.collapsed .sidebar-toggle .toggle-icon {
+            font-size: 12px;
+        }
+
+        .sidebar.collapsed .sidebar-toggle .toggle-label {
+            display: none;
+        }
+
+        .sidebar-toggle .toggle-label {
+            font-size: 13px;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .sidebar.collapsed nav {
+            gap: 2px;
+        }
+
+        .sidebar nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #334155;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed nav a {
+            gap: 0;
+        }
+
+        .sidebar nav a .link-text {
+            transition: opacity 0.3s ease, width 0.3s ease;
+            overflow: hidden;
+        }
+
+        .sidebar.collapsed nav a .link-text {
+            opacity: 0;
+            width: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar.collapsed nav a {
+            padding: 10px;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .sidebar nav a .link-icon {
+            flex-shrink: 0;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .sidebar.collapsed nav a .link-icon {
+            font-size: 20px;
+        }
+
+        .sidebar nav a:hover {
+            background: #dce3ea;
+            color: #0f172a;
+        }
+
+        .sidebar nav a.active {
+            background: #3b82f6;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+        }
+
+        .sidebar nav a.active .link-icon {
+            color: #ffffff;
+        }
+
+        .sidebar-footer {
+            padding-top: 12px;
+            font-size: 11px;
+            color: #94a3b8;
+            transition: opacity 0.3s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .sidebar.collapsed .sidebar-footer {
+            opacity: 0;
+            font-size: 0;
+            padding-top: 0;
+        }
+
+        .main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+            height: 100vh;
+            transition: padding 0.3s ease;
+        }
+
+        #app-content {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+            min-height: calc(100vh - 40px);
+            position: relative;
+        }
+
+        .service-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+            min-height: calc(100vh - 40px);
+        }
+
+        .service-container.active {
+            display: block;
+        }
+
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            color: #94a3b8;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .placeholder-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .placeholder h3 {
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        .placeholder p {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .sidebar {
+                width: 100%;
+                min-width: unset;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                padding: 12px 16px;
+                border-right: none;
+                border-bottom: 1px solid #d1d9e0;
+                gap: 8px 0;
+                box-shadow: none;
+                transition: none;
+            }
+
+            .sidebar.collapsed {
+                width: 100%;
+                min-width: unset;
+                padding: 12px 16px;
+            }
+
+            .sidebar-toggle-wrapper {
+                display: none;
+            }
+
+            .sidebar-header {
+                font-size: 18px;
+                padding: 0;
+                margin: 0;
+                border-bottom: none;
+                width: 100%;
+                gap: 8px;
+            }
+
+            .sidebar-header .sidebar-logo {
+                width: 24px;
+                height: 24px;
+            }
+
+            .sidebar.collapsed .sidebar-header {
+                font-size: 18px;
+                padding: 0;
+                margin: 0;
+                border-bottom: none;
+                gap: 8px;
+                justify-content: flex-start;
+            }
+
+            .sidebar.collapsed .sidebar-header .sidebar-logo {
+                width: 24px;
+                height: 24px;
+            }
+
+            .sidebar.collapsed .sidebar-header span {
+                display: inline;
+            }
+
+            .sidebar nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 4px;
+                width: 100%;
+            }
+
+            .sidebar nav a {
+                padding: 8px 14px;
+                font-size: 13px;
+                white-space: nowrap;
+                gap: 6px;
+            }
+
+            .sidebar nav a .link-text {
+                opacity: 1 !important;
+                width: auto !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .sidebar.collapsed nav a {
+                padding: 8px 14px;
+                justify-content: flex-start;
+                font-size: 13px;
+            }
+
+            .sidebar.collapsed nav a .link-icon {
+                font-size: 16px;
+            }
+
+            .sidebar-footer {
+                display: none;
+            }
+
+            .main {
+                padding: 12px;
+                height: auto;
+                overflow-y: visible;
+            }
+
+            #app-content {
+                padding: 0;
+                min-height: 400px;
+                border-radius: 8px;
+            }
+
+            .service-container {
+                min-height: 400px;
+            }
+        }
+    </style>
+
+    <style id="dynamic-styles"></style>
+</head>
+
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="img/fav.png" alt="Office" class="sidebar-logo">
+            <span>Офис</span>Сервисы
+        </div>
+        <nav id="menu"></nav>
+
+        <div class="sidebar-toggle-wrapper">
+            <button class="sidebar-toggle" id="toggleSidebar" title="Свернуть/развернуть">
+                <span class="toggle-icon">◀</span>
+                <span class="toggle-label">Свернуть</span>
+            </button>
+        </div>
+
+        <div class="sidebar-footer">v1.0 · локально</div>
+    </aside>
+
+    <main class="main">
+        <div id="app-content">
+            <div class="placeholder" id="placeholder">
+                <div class="placeholder-icon">🧰</div>
+                <h3>Выберите сервис</h3>
+                <p>Нажмите на пункт меню слева, чтобы загрузить инструмент</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = './lib/pdf.worker.min.js';
+        }
+
+        (function () {
+            'use strict';
+
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const toggleIcon = toggleBtn.querySelector('.toggle-icon');
+            const toggleLabel = toggleBtn.querySelector('.toggle-label');
+
+            toggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                sidebar.classList.toggle('collapsed');
+                if (sidebar.classList.contains('collapsed')) {
+                    toggleIcon.textContent = '▶';
+                    toggleLabel.textContent = '';
+                    toggleBtn.title = 'Развернуть';
+                } else {
+                    toggleIcon.textContent = '◀';
+                    toggleLabel.textContent = 'Свернуть';
+                    toggleBtn.title = 'Свернуть';
+                }
+            });
+
+            const sidebarHeader = document.querySelector('.sidebar-header');
+            const content = document.getElementById('app-content');
+            const placeholder = document.getElementById('placeholder');
+
+            sidebarHeader.addEventListener('click', function (e) {
+                e.stopPropagation();
+                document.querySelectorAll('#menu a').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.service-container').forEach(el => el.classList.remove('active'));
+                const loadingEl = content.querySelector('.loading-container');
+                if (loadingEl) loadingEl.remove();
+                placeholder.style.display = 'flex';
+                if (window.location.pathname !== '/') {
+                    window.history.pushState({}, '', '/');
+                }
+            });
+
+            const SERVICES = [{
+                id: 'text-diff',
+                label: 'Сравнение текстов',
+                icon: '📄',
+                file: '/Compare-text-online/index.html',
+                route: '/compare-text'
+            }, {
+                id: 'odt-diff',
+                label: 'Сравнение ODT',
+                icon: '📂',
+                file: '/analyze-odt/index.html',
+                route: '/compare-odt'
+            }, {
+                id: 'ocr',
+                label: 'OCR с картинки',
+                icon: '🖼️',
+                file: '/Tesseract%20OCR-online/index.html',
+                route: '/ocr'
+            }, {
+                id: 'ocr-pdf',
+                label: 'OCR с PDF-файла',
+                icon: '📑',
+                file: '/OCR-to-PDF/index.html',
+                route: '/ocr-pdf'
+            }, {
+                id: 'normalize-text',
+                label: 'Нормализатор текста',
+                icon: '🧹',
+                file: '/normalize-text/index.html',
+                route: '/normalize'
+            }, {
+                id: 'spell-check',
+                label: 'Проверка орфографии',
+                icon: '📝',
+                file: '/spell-check/index.html',
+                route: '/spell-check'
+            }];
+
+            const menu = document.getElementById('menu');
+            const serviceCache = {};
+
+            // =============================================================
+            // ИЗВЛЕЧЕНИЕ СТИЛЕЙ ИЗ HTML
+            // =============================================================
+            function extractStyles(html) {
+                const styleMatches = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi);
+                if (!styleMatches) return '';
+                let allStyles = '';
+                styleMatches.forEach(styleTag => {
+                    const contentMatch = styleTag.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+                    if (contentMatch) {
+                        allStyles += contentMatch[1] + '\n';
+                    }
+                });
+                return allStyles;
+            }
+
+            // =============================================================
+            // РЕНДЕРИНГ СЕРВИСА
+            // =============================================================
+            function renderService(serviceId, html, fromCache = false) {
+                // --- 1. Извлекаем и применяем стили ---
+                const styles = extractStyles(html);
+                if (styles) {
+                    let styleEl = document.getElementById('style-' + serviceId);
+                    if (!styleEl) {
+                        styleEl = document.createElement('style');
+                        styleEl.id = 'style-' + serviceId;
+                        document.head.appendChild(styleEl);
+                    }
+                    styleEl.textContent = styles;
+                }
+
+                // --- 2. Извлекаем <body> ---
+                const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                const bodyContent = bodyMatch ? bodyMatch[1] : html;
+
+                // --- 3. Создаём или обновляем контейнер ---
+                let container = document.getElementById('service-' + serviceId);
+                if (!container) {
+                    container = document.createElement('div');
+                    container.className = 'service-container';
+                    container.id = 'service-' + serviceId;
+                    content.appendChild(container);
+                }
+
+                container.innerHTML = bodyContent;
+
+                // --- 4. Перезапускаем скрипты ---
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    if (!oldScript.src) {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = oldScript.textContent;
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                    }
+                });
+
+                // --- 5. Сохраняем в кеш ---
+                serviceCache[serviceId] = container;
+
+                // --- 6. Показываем ---
+                showService(serviceId);
+
+                if (!fromCache) {
+                    console.log(`✅ Сервис "${serviceId}" загружен и закеширован`);
+                }
+            }
+
+            function showService(serviceId) {
+                document.querySelectorAll('.service-container').forEach(el => {
+                    el.classList.remove('active');
+                });
+
+                const loadingEl = content.querySelector('.loading-container');
+                if (loadingEl) loadingEl.remove();
+
+                if (serviceCache[serviceId]) {
+                    serviceCache[serviceId].classList.add('active');
+                    placeholder.style.display = 'none';
+                }
+            }
+
+            SERVICES.forEach(service => {
+                const link = document.createElement('a');
+                link.dataset.file = service.file;
+                link.dataset.id = service.id;
+                link.dataset.route = service.route;
+                link.innerHTML = `
+                    <span class="link-icon">${service.icon}</span>
+                    <span class="link-text">${service.label}</span>
+                `;
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    navigateTo(service.id, service.file, service.route, this);
+                });
+                menu.appendChild(link);
+            });
+
+            function navigateTo(serviceId, file, route, clickedLink) {
+                document.querySelectorAll('#menu a').forEach(el => el.classList.remove('active'));
+                if (clickedLink) {
+                    clickedLink.classList.add('active');
+                }
+                if (route && route !== window.location.pathname) {
+                    window.history.pushState({ serviceId, file }, '', route);
+                }
+                loadService(serviceId, file);
+            }
+
+            // =============================================================
+            // ЗАГРУЗКА СЕРВИСА
+            // =============================================================
+            async function loadService(serviceId, file) {
+                // --- 1. Проверяем localStorage ---
+                const cachedHtml = localStorage.getItem('service_' + serviceId);
+                if (cachedHtml) {
+                    console.log(`💾 Сервис "${serviceId}" загружен из localStorage`);
+                    renderService(serviceId, cachedHtml, true);
+                    return;
+                }
+
+                // --- 2. Проверяем кеш в памяти ---
+                if (serviceCache[serviceId]) {
+                    showService(serviceId);
+                    return;
+                }
+
+                // --- 3. Загружаем через fetch ---
+                placeholder.style.display = 'none';
+                const oldLoading = content.querySelector('.loading-container');
+                if (oldLoading) oldLoading.remove();
+
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'service-container loading-container';
+                loadingDiv.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;color:#94a3b8;padding:40px 20px;">
+                        <div style="font-size:36px;margin-bottom:12px;">⏳</div>
+                        <div style="font-size:14px;">Загрузка сервиса...</div>
+                        <div style="margin-top:12px;width:200px;height:4px;background:#e2e8f0;border-radius:2px;overflow:hidden;">
+                            <div id="load-progress" style="width:0%;height:100%;background:#3b82f6;transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+                `;
+                content.appendChild(loadingDiv);
+
+                try {
+                    const htmlUrl = file + '?t=' + Date.now();
+                    const htmlResponse = await fetch(htmlUrl);
+                    if (!htmlResponse.ok) {
+                        throw new Error(`HTTP ${htmlResponse.status}`);
+                    }
+                    const html = await htmlResponse.text();
+
+                    if (loadingDiv.parentNode) {
+                        loadingDiv.parentNode.removeChild(loadingDiv);
+                    }
+
+                    // --- Сохраняем в localStorage ---
+                    try {
+                        localStorage.setItem('service_' + serviceId, html);
+                        console.log(`💾 Сервис "${serviceId}" сохранён в localStorage`);
+                    } catch (e) {
+                        console.warn('localStorage недоступен:', e);
+                    }
+
+                    renderService(serviceId, html);
+
+                } catch (error) {
+                    console.error('❌ Ошибка:', error);
+                    if (loadingDiv.parentNode) {
+                        loadingDiv.parentNode.removeChild(loadingDiv);
+                    }
+
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'service-container';
+                    errorDiv.innerHTML = `
+                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;background:#fef2f2;border-radius:12px;padding:40px 20px;margin:20px;">
+                            <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+                            <h3 style="color:#b91c1c;margin-bottom:6px;">Не удалось загрузить сервис</h3>
+                            <p style="color:#64748b;font-size:14px;">Файл: <strong>${file}</strong></p>
+                            <details style="margin-top:12px;text-align:left;font-size:13px;color:#64748b;max-width:500px;">
+                                <summary>Техническая информация</summary>
+                                <pre style="background:#f1f5f9;padding:8px;border-radius:4px;margin-top:8px;overflow:auto;white-space:pre-wrap;word-break:break-all;">${error.message}</pre>
+                            </details>
+                        </div>
+                    `;
+                    content.appendChild(errorDiv);
+                    serviceCache[serviceId] = errorDiv;
+                    errorDiv.classList.add('active');
+                    placeholder.style.display = 'none';
+                }
+            }
+
+            // =============================================================
+            // ПРЕДЗАГРУЗКА
+            // =============================================================
+            function preloadServices() {
+                console.log('🔄 Начинаем предзагрузку сервисов...');
+                SERVICES.forEach(service => {
+                    if (localStorage.getItem('service_' + service.id)) {
+                        console.log(`⏭️ ${service.label} уже в localStorage, пропускаем`);
+                        return;
+                    }
+                    fetch(service.file)
+                        .then(response => {
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                            return response.text();
+                        })
+                        .then(html => {
+                            try {
+                                localStorage.setItem('service_' + service.id, html);
+                                console.log(`✅ Предзагружен: ${service.label}`);
+                            } catch (e) {
+                                console.warn(`⚠️ Не удалось сохранить ${service.label} в localStorage`);
+                            }
+                        })
+                        .catch(err => {
+                            console.warn(`⚠️ Не удалось предзагрузить ${service.label}:`, err.message);
+                        });
+                });
+            }
+
+            window.addEventListener('popstate', function (e) {
+                if (e.state && e.state.serviceId) {
+                    const link = document.querySelector(`#menu a[data-id="${e.state.serviceId}"]`);
+                    if (link) {
+                        document.querySelectorAll('#menu a').forEach(el => el.classList.remove('active'));
+                        link.classList.add('active');
+                        loadService(e.state.serviceId, e.state.file);
+                    }
+                } else {
+                    document.querySelectorAll('#menu a').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.service-container').forEach(el => el.classList.remove('active'));
+                    placeholder.style.display = 'flex';
+                }
+            });
+
+            function checkRouteOnLoad() {
+                const path = window.location.pathname;
+                const service = SERVICES.find(s => s.route === path);
+                if (service) {
+                    const link = document.querySelector(`#menu a[data-id="${service.id}"]`);
+                    if (link) {
+                        loadService(service.id, service.file);
+                        document.querySelectorAll('#menu a').forEach(el => el.classList.remove('active'));
+                        link.classList.add('active');
+                    }
+                }
+            }
+
+            checkRouteOnLoad();
+            setTimeout(preloadServices, 2000);
+
+            console.log('📋 Доступные сервисы:');
+            SERVICES.forEach(s => {
+                const cached = localStorage.getItem('service_' + s.id);
+                console.log(`  - ${s.icon} ${s.label}: ${s.file} → ${s.route} ${cached ? '💾' : '📡'}`);
+            });
+
+            console.log('📚 Библиотеки загружены:');
+            console.log('  - diff_match_patch:', typeof diff_match_patch !== 'undefined' ? '✅' : '❌');
+            console.log('  - Tesseract:', typeof Tesseract !== 'undefined' ? '✅' : '❌');
+            console.log('  - JSZip:', typeof JSZip !== 'undefined' ? '✅' : '❌');
+            console.log('  - pdfjsLib:', typeof pdfjsLib !== 'undefined' ? '✅' : '❌');
+
+        })();
+    </script>
+
+</body>
+
+</html> 

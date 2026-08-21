@@ -1,0 +1,884 @@
+<!-- Office-Service/normalize-text/index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нормализатор текста</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 0;
+            color: #212529;
+        }
+
+        .app-card {
+            max-width: 100%;
+            width: 100%;
+            background: white;
+            padding: 0;
+        }
+
+        /* ===== ЗАГОЛОВОК С КНОПКОЙ СПРАВКА ===== */
+        .header-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        .header-wrapper h1 {
+            margin: 0;
+            padding: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-weight: 500;
+            font-size: 28px;
+            color: #212529;
+        }
+
+        /* ===== ТЕКСТОВОЕ ПОЛЕ ===== */
+        .input-section {
+            margin-bottom: 24px;
+        }
+
+        .input-section textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 14px 18px;
+            font-size: 15px;
+            line-height: 1.8;
+            font-family: inherit;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: #ffffff;
+            resize: vertical;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            color: #212529;
+        }
+
+        .input-section textarea:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .input-section textarea::placeholder {
+            color: #6c757d;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn img {
+            display: inline-block;
+            height: 18px;
+            width: 18px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        .btn-primary {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+
+        .btn-primary:focus:not(:disabled) {
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #2b8c5e;
+            border-color: #2b8c5e;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background-color: #1e6b47;
+            border-color: #1a5f3f;
+        }
+
+        .btn-outline-secondary {
+            color: #212529;
+            background-color: transparent;
+            border-color: #ced4da;
+        }
+
+        .btn-outline-secondary:hover:not(:disabled) {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .btn-settings {
+            color: #fff;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-settings:hover:not(:disabled) {
+            background-color: #5c636a;
+            border-color: #565e64;
+        }
+
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 14px;
+        }
+
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px 20px;
+            margin: 8px 0 20px;
+        }
+
+        .action-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stats-badge {
+            font-size: 15px;
+            color: #495057;
+            background: #e9ecef;
+            padding: 6px 18px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        /* ===== РЕЗУЛЬТАТ ===== */
+        .output-block {
+            background: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 18px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ced4da;
+            font-weight: 500;
+            font-size: 15px;
+            color: #212529;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .output-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .output-header small {
+            font-weight: 400;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .output-body {
+            padding: 20px 28px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 2;
+            font-size: 15px;
+            background: #ffffff;
+            color: #212529;
+            min-height: 80px;
+
+            text-align: justify;
+            text-justify: inter-word;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+            -moz-hyphens: auto;
+            -ms-hyphens: auto;
+            text-indent: 0;
+        }
+
+        .output-body p {
+            margin-bottom: 0.8em;
+            text-align: justify;
+            text-justify: inter-word;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+            -moz-hyphens: auto;
+            -ms-hyphens: auto;
+        }
+
+        .output-body:empty::before {
+            content: "Текст появится здесь…";
+            color: #adb5bd;
+            font-style: italic;
+            text-align: left;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #212529;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО (общее) ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #ffffff;
+            border-radius: 4px;
+            max-width: 460px;
+            width: 92%;
+            padding: 28px 28px 24px;
+            border: 1px solid #ced4da;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            animation: modalFade 0.15s ease;
+        }
+
+        @keyframes modalFade {
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal h2 {
+            font-weight: 500;
+            font-size: 22px;
+            color: #212529;
+            margin: 0 0 4px 0;
+        }
+
+        .modal p {
+            color: #6c757d;
+            margin: 0 0 18px 0;
+            font-size: 15px;
+        }
+
+        .modal ul {
+            margin: 0 0 18px 18px;
+            color: #212529;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .modal ul li {
+            margin-bottom: 4px;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .modal-actions .btn {
+            padding: 6px 20px;
+            font-size: 14px;
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО (параметры) ===== */
+        .option-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 14px 0 22px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            transition: 0.1s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .option-item:hover {
+            background: #e9ecef;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #007bff;
+            cursor: pointer;
+            flex-shrink: 0;
+            margin: 0;
+        }
+
+        .option-item label {
+            font-size: 15px;
+            cursor: pointer;
+            color: #212529;
+            user-select: none;
+            flex: 1;
+        }
+
+        .option-item .hint {
+            font-size: 13px;
+            color: #6c757d;
+            background: #e9ecef;
+            padding: 2px 12px;
+            border-radius: 12px;
+        }
+
+        .reset-link {
+            color: #007bff;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: underline dotted;
+            margin-right: auto;
+            padding: 4px 0;
+        }
+
+        .reset-link:hover {
+            color: #0069d9;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .header-wrapper {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar-left {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .stats-badge {
+                text-align: center;
+                white-space: normal;
+            }
+
+            .output-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .output-header-left {
+                justify-content: space-between;
+            }
+
+            .output-body {
+                padding: 16px 18px;
+                font-size: 14px;
+            }
+
+            .modal {
+                padding: 20px 16px 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-card">
+        <!-- ===== ЗАГОЛОВОК С КНОПКОЙ СПРАВКА ===== -->
+        <div class="header-wrapper">
+            <h1>Нормализатор текста</h1>
+            <div class="header-actions">
+                <button class="btn btn-outline-secondary btn-sm" id="helpBtn">
+                    <img src="/img/help.png" alt=""> Справка
+                </button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <textarea id="inputText" placeholder="Вставьте текст для нормализации…"></textarea> 
+        </div>
+
+        <div class="action-bar">
+            <div class="action-bar-left">
+                <button class="btn btn-primary" id="normalizeBtn">✨ Нормализовать</button>
+                <button class="btn btn-outline-secondary" id="clearBtn-norm"><img src="/img/clear.png" alt=""> Очистить</button>
+                <button class="btn btn-settings" id="settingsBtn">⚙️ Параметры</button>
+            </div>
+            <span class="stats-badge" id="charCount">символов: 0</span>
+        </div>
+
+        <div class="output-block">
+            <div class="output-header">
+                <div class="output-header-left">
+                    <span>✅ Нормализованный текст</span>
+                    <small id="resultStats">0 симв.</small>
+                </div>
+                <button class="btn btn-success btn-sm" id="copyBtn_norm"><img src="/img/copy.png" alt="">
+                    Копировать</button>
+            </div>
+            <div class="output-body" id="normalizedText"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✅ Скопировано!</div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО ПАРАМЕТРОВ ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h2>⚙️ Параметры</h2>
+            <p>Включите или отключите нужные правила. Если ничего не выбрано — применяются все.</p>
+            <div class="option-group">
+                <div class="option-item">
+                    <input type="checkbox" id="optQuotes" checked>
+                    <label for="optQuotes">«Угловые кавычки»</label>
+                    <span class="hint">" → « »</span>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="optSpaces" checked>
+                    <label for="optSpaces">Один пробел</label>
+                    <span class="hint">схлопывание</span>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="optCapitalize" checked>
+                    <label for="optCapitalize">Заглавная после . ! ? …</label>
+                    <span class="hint">регистр</span>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="optParagraphs" checked>
+                    <label for="optParagraphs">Лишние абзацы</label>
+                    <span class="hint">\n → пробел</span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <span class="reset-link" id="resetDefaults">↺ сбросить</span>
+                <button class="btn btn-outline-secondary btn-sm" id="modalCloseBtn">Закрыть</button>
+                <button class="btn btn-primary btn-sm" id="modalApplyBtn">Применить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== МОДАЛЬНОЕ ОКНО СПРАВКИ ===== -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <h2>📖 Справка</h2>
+            <p>Нормализатор текста помогает привести текст к единому стандарту.</p>
+            <ul>
+                <li><strong>«Угловые кавычки»</strong> — заменяет обычные кавычки " и ' на « »</li>
+                <li><strong>Один пробел</strong> — удаляет лишние пробелы и табуляции</li>
+                <li><strong>Заглавная после . ! ? …</strong> — делает первую букву после знаков препинания заглавной</li>
+                <li><strong>Лишние абзацы</strong> — объединяет строки, не завершённые точкой</li>
+            </ul>
+            <p><strong>Горячие клавиши:</strong> Ctrl+Enter — выполнить нормализацию</p>
+            <div class="modal-actions">
+                <button class="btn btn-primary btn-sm" id="helpCloseBtn">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const inputText = document.getElementById('inputText');
+            const normalizedDiv = document.getElementById('normalizedText');
+            const normalizeBtn = document.getElementById('normalizeBtn');
+            const clearBtn_norm = document.getElementById('clearBtn-norm');
+            const copyBtn_norm = document.getElementById('copyBtn_norm');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const helpBtn = document.getElementById('helpBtn');
+            const charCount = document.getElementById('charCount');
+            const resultStats = document.getElementById('resultStats');
+            const toast = document.getElementById('toast');
+
+            const settingsModal = document.getElementById('settingsModal');
+            const helpModal = document.getElementById('helpModal');
+            const modalCloseBtn = document.getElementById('modalCloseBtn');
+            const modalApplyBtn = document.getElementById('modalApplyBtn');
+            const resetDefaultsBtn = document.getElementById('resetDefaults');
+            const helpCloseBtn = document.getElementById('helpCloseBtn');
+
+            const optQuotes = document.getElementById('optQuotes');
+            const optSpaces = document.getElementById('optSpaces');
+            const optCapitalize = document.getElementById('optCapitalize');
+            const optParagraphs = document.getElementById('optParagraphs');
+
+            let settings = {
+                quotes: true,
+                spaces: true,
+                capitalize: true,
+                paragraphs: true
+            };
+
+            let lastNormalizedText = '';
+
+            function syncCheckboxes() {
+                optQuotes.checked = settings.quotes;
+                optSpaces.checked = settings.spaces;
+                optCapitalize.checked = settings.capitalize;
+                optParagraphs.checked = settings.paragraphs;
+            }
+
+            function readSettingsFromUI() {
+                settings.quotes = optQuotes.checked;
+                settings.spaces = optSpaces.checked;
+                settings.capitalize = optCapitalize.checked;
+                settings.paragraphs = optParagraphs.checked;
+            }
+
+            function resetToDefaults() {
+                settings = { quotes: true, spaces: true, capitalize: true, paragraphs: true };
+                syncCheckboxes();
+            }
+
+            function ensureAtLeastOne() {
+                if (!settings.quotes && !settings.spaces && !settings.capitalize && !settings.paragraphs) {
+                    resetToDefaults();
+                }
+            }
+
+            // =============================================================
+            // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАМЕНЫ КАВЫЧЕК
+            // =============================================================
+            function replaceQuotesToGuillemets(text) {
+                let result = '';
+                let i = 0;
+
+                while (i < text.length) {
+                    const ch = text[i];
+
+                    if (ch === '"' || ch === "'") {
+                        const leftChar = i > 0 ? text[i - 1] : '';
+                        const rightChar = i < text.length - 1 ? text[i + 1] : '';
+
+                        // Если слева буква/цифра → это закрывающая кавычка
+                        const leftIsAlnum = leftChar !== '' && /[а-яА-Яa-zA-Z0-9]/.test(leftChar);
+                        if (leftIsAlnum) {
+                            result += '»';
+                        }
+                        // Если справа точка, запятая, пробел или конец строки → закрывающая
+                        else if (rightChar === '.' || rightChar === ',' || rightChar === ';' || rightChar === ':' ||
+                                 rightChar === '!' || rightChar === '?' || rightChar === ')' || rightChar === ']' ||
+                                 rightChar === '}' || rightChar === '·' || rightChar === ' ' || rightChar === '' ||
+                                 rightChar === '\n' || rightChar === '\r') {
+                            result += '»';
+                        }
+                        // Если слева пробел или начало строки → открывающая
+                        else if (leftChar === ' ' || leftChar === '' || leftChar === '\n' || leftChar === '\r') {
+                            result += '«';
+                        }
+                        // Иначе — если справа буква/цифра → открывающая
+                        else if (rightChar !== '' && /[а-яА-Яa-zA-Z0-9]/.test(rightChar)) {
+                            result += '«';
+                        }
+                        // По умолчанию → закрывающая
+                        else {
+                            result += '»';
+                        }
+                    } else {
+                        result += ch;
+                    }
+                    i++;
+                }
+
+                return result;
+            }
+
+            function collapseSpaces(text) {
+                const lines = text.split(/\r?\n/);
+                const processed = lines.map(line => line.replace(/[ \t\r]+/g, ' ').replace(/[ ]{2,}/g, ' '));
+                return processed.join('\n');
+            }
+
+            function fixPunctuationAndCapitalize(text) {
+                const lines = text.split(/\r?\n/);
+                const processed = lines.map(line => {
+                    let step = line.replace(/\.{3,}/g, '…');
+                    let result = step.replace(/([.!?…])\s*(\p{L})/gu, (m, p, l) => p + ' ' + l.toUpperCase());
+                    result = result.replace(/([.!?…])\s*«\s*(\p{L})/gu, (m, p, l) => p + ' «' + l.toUpperCase());
+                    return result;
+                });
+                return processed.join('\n');
+            }
+
+            function fixParagraphs(text) {
+                const lines = text.split(/\r?\n/);
+                if (lines.length <= 1) return text;
+                let result = '';
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (i === lines.length - 1) { result += line; break; }
+                    const trimmed = line.trimEnd();
+                    const last = trimmed.length > 0 ? trimmed[trimmed.length - 1] : '';
+                    result += ['.', '!', '?', '…'].includes(last) ? line + '\n' : line + ' ';
+                }
+                return result;
+            }
+
+            function normalizeText(text) {
+                if (!text) return '';
+                let result = text;
+                ensureAtLeastOne();
+                if (settings.quotes) result = replaceQuotesToGuillemets(result);
+                if (settings.spaces) result = collapseSpaces(result);
+                if (settings.capitalize) result = fixPunctuationAndCapitalize(result);
+                if (settings.paragraphs) result = fixParagraphs(result);
+                if (settings.spaces) {
+                    const lines = result.split(/\r?\n/);
+                    result = lines.map(l => l.replace(/[ ]{2,}/g, ' ')).join('\n');
+                }
+                return result;
+            }
+
+            function updateStats(text, el) {
+                const len = text.length;
+                if (el) el.textContent = `символов: ${len}`;
+                return len;
+            }
+
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toast._timeout);
+                toast._timeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            function handleNormalize() {
+                const raw = inputText.value;
+                updateStats(raw, charCount);
+
+                if (!raw.trim()) {
+                    normalizedDiv.textContent = '';
+                    resultStats.textContent = '0 симв.';
+                    lastNormalizedText = '';
+                    return;
+                }
+
+                readSettingsFromUI();
+                ensureAtLeastOne();
+                syncCheckboxes();
+
+                const normalized = normalizeText(raw);
+                normalizedDiv.textContent = normalized;
+                resultStats.textContent = `${normalized.length} симв.`;
+                lastNormalizedText = normalized;
+            }
+
+            function handleCopy() {
+                if (!lastNormalizedText) {
+                    showToast('⚠️ Нет текста для копирования');
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(lastNormalizedText)
+                        .then(() => {
+                            showToast('✅ Скопировано!');
+                        })
+                        .catch(() => {
+                            fallbackCopy(lastNormalizedText);
+                        });
+                } else {
+                    fallbackCopy(lastNormalizedText);
+                }
+            }
+
+            function fallbackCopy(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                textarea.style.top = '0';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        showToast('✅ Скопировано!');
+                    } else {
+                        showToast('❌ Ошибка копирования');
+                    }
+                } catch (e) {
+                    showToast('❌ Ошибка копирования');
+                }
+
+                document.body.removeChild(textarea);
+            }
+
+            function handleClear() {
+                inputText.value = '';
+                normalizedDiv.textContent = '';
+                charCount.textContent = 'символов: 0';
+                resultStats.textContent = '0 симв.';
+                lastNormalizedText = '';
+                inputText.focus();
+            }
+
+            // --- Модальные окна ---
+            function openSettingsModal() { syncCheckboxes(); settingsModal.classList.add('active'); }
+            function closeSettingsModal() { settingsModal.classList.remove('active'); }
+
+            function openHelpModal() { helpModal.classList.add('active'); }
+            function closeHelpModal() { helpModal.classList.remove('active'); }
+
+            function applySettings() {
+                readSettingsFromUI();
+                ensureAtLeastOne();
+                syncCheckboxes();
+                closeSettingsModal();
+                if (inputText.value.trim()) handleNormalize();
+            }
+
+            function init() {
+                const initial = inputText.value;
+                updateStats(initial, charCount);
+                if (initial.trim()) {
+                    const normalized = normalizeText(initial);
+                    normalizedDiv.textContent = normalized;
+                    resultStats.textContent = `${normalized.length} симв.`;
+                    lastNormalizedText = normalized;
+                } else {
+                    normalizedDiv.textContent = '';
+                    resultStats.textContent = '0 симв.';
+                    lastNormalizedText = '';
+                }
+
+                normalizeBtn.addEventListener('click', handleNormalize);
+                clearBtn_norm.addEventListener('click', handleClear);
+                copyBtn_norm.addEventListener('click', handleCopy);
+                settingsBtn.addEventListener('click', openSettingsModal);
+                helpBtn.addEventListener('click', openHelpModal);
+                helpCloseBtn.addEventListener('click', closeHelpModal);
+                modalCloseBtn.addEventListener('click', closeSettingsModal);
+                modalApplyBtn.addEventListener('click', applySettings);
+                settingsModal.addEventListener('click', e => { if (e.target === settingsModal) closeSettingsModal(); });
+                helpModal.addEventListener('click', e => { if (e.target === helpModal) closeHelpModal(); });
+                resetDefaultsBtn.addEventListener('click', () => { resetToDefaults(); applySettings(); });
+
+                inputText.addEventListener('keydown', e => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        handleNormalize();
+                    }
+                });
+                inputText.addEventListener('input', function () {
+                    updateStats(this.value, charCount);
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+
+</html> 

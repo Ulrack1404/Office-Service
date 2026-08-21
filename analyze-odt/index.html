@@ -1,0 +1,1991 @@
+<!-- Office-Service/analyze-odt/index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Сравнение ODT-файлов</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 0;
+            color: #212529;
+        }
+
+        .app-card {
+            max-width: 100%;
+            width: 100%;
+            background: white;
+            padding: 0;
+        }
+
+        h1 {
+            font-weight: 500;
+            font-size: 28px;
+            color: #212529;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        /* ======================================== */
+        /* ПОДКЛЮЧЕНИЕ PT ASTRA SERIF               */
+        /* ======================================== */
+
+        @font-face {
+            font-family: 'PT Astra Serif';
+            src: url('./Fonts/PT-Astra-Serif_Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'PT Astra Serif';
+            src: url('./Fonts/PT-Astra-Serif_Italic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'PT Astra Serif';
+            src: url('./Fonts/PT-Astra-Serif_Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'PT Astra Serif';
+            src: url('./Fonts/PT-Astra-Serif_Bold-Italic.ttf') format('truetype');
+            font-weight: bold;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        /* ===== ЗОНА ЗАГРУЗКИ ===== */
+        .upload-section {
+            margin-bottom: 24px;
+        }
+
+        .double-upload-zone {
+            border: 2px dashed #ced4da;
+            border-radius: 4px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.2s;
+            cursor: pointer;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .double-upload-zone:hover {
+            border-color: #80bdff;
+            background: #e9ecef;
+        }
+
+        .double-upload-zone.dragover {
+            border-color: #007bff;
+            background: #cfe2ff;
+            box-shadow: inset 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        .double-upload-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+
+        .double-upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .double-upload-hint {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .double-file-input {
+            display: none;
+        }
+
+        /* ===== ИНФОРМАЦИЯ О ФАЙЛАХ ===== */
+        .files-loaded-info {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 14px;
+            color: #495057;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .files-loaded-info .file-loaded {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: #e9ecef;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+
+        .files-loaded-info .file-loaded .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .files-loaded-info .file-loaded .dot.left-dot {
+            background: #d0314e;
+        }
+
+        .files-loaded-info .file-loaded .dot.right-dot {
+            background: #2b8c5e;
+        }
+
+        .files-loaded-info .file-loaded .dot.empty-dot {
+            background: #ced4da;
+        }
+
+        .files-loaded-info .swap-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 30px;
+            border: none;
+            background: #007bff;
+            color: white;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .files-loaded-info .swap-btn:hover:not(:disabled) {
+            background: #0069d9;
+            transform: translateY(-1px);
+        }
+
+        .files-loaded-info .swap-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== ЛЕГЕНДА ===== */
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin: 16px 0 20px 0;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: 1px solid #ced4da;
+        }
+
+        .legend-color.left {
+            background-color: #d0314e;
+        }
+
+        .legend-color.right {
+            background-color: #2b8c5e;
+        }
+
+        .legend-color.diff {
+            background-color: #fff8e1;
+            border-color: #ffb300;
+        }
+
+        .legend-color.same {
+            background-color: transparent;
+            border-color: #ced4da;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            color: #fff;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #5c636a;
+            border-color: #565e64;
+        }
+
+        .btn-compare {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 10px 24px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 4px;
+            color: #fff;
+            background-color: #007bff;
+            border: 1px solid #007bff;
+            transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            user-select: none;
+            position: relative;
+            min-width: 140px;
+        }
+
+        .btn-compare:hover:not(:disabled) {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+
+        .btn-compare:focus:not(:disabled) {
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn-compare:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn-compare .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+        }
+
+        .btn-compare.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-compare.loading .btn-text {
+            opacity: 0.85;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px 20px;
+            margin: 8px 0 20px;
+        }
+
+        .action-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== ПРОГРЕСС-БАР ===== */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 12px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .progress-container.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .progress-bar-custom {
+            height: 100%;
+            background: #007bff;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 0.4s ease;
+        }
+
+        .progress-bar-custom.animate {
+            animation: progressAnimation 2s ease-in-out infinite;
+        }
+
+        @keyframes progressAnimation {
+            0% {
+                width: 0%;
+            }
+
+            50% {
+                width: 70%;
+            }
+
+            100% {
+                width: 100%;
+            }
+        }
+
+        /* ===== СТИЛИ ДЛЯ ФОРМАТИРОВАНИЯ ТЕКСТА ===== */
+        .format-bold {
+            font-weight: bold !important;
+        }
+
+        .format-italic {
+            font-style: italic !important;
+        }
+
+        .format-underline {
+            text-decoration: underline !important;
+        }
+
+        .format-strikethrough {
+            text-decoration: line-through !important;
+        }
+
+        /* ===== МОДАЛЬНОЕ ОКНО ===== */
+        .dual-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            z-index: 9999;
+            flex-direction: column;
+            padding: 16px 20px 20px 20px;
+            overflow: hidden;
+        }
+
+        .dual-modal.active {
+            display: flex;
+        }
+
+        .dual-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #dee2e6;
+            flex-shrink: 0;
+        }
+
+        .dual-modal-header .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .dual-modal-header .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0 8px;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .dual-modal-header .modal-close:hover {
+            color: #d0314e;
+        }
+
+        .dual-modal-body {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+            min-height: 0;
+            padding-top: 12px;
+            overflow: hidden;
+        }
+
+        .dual-modal-body .output-column {
+            flex: 1;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+        }
+
+        .dual-modal-body .output-column .column-header {
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid #ced4da;
+            background: #f8f9fa;
+            flex-shrink: 0;
+        }
+
+        .dual-modal-body .output-column .column-header.left-header {
+            color: #d0314e;
+            border-bottom-color: #d0314e;
+        }
+
+        .dual-modal-body .output-column .column-header.right-header {
+            color: #2b8c5e;
+            border-bottom-color: #2b8c5e;
+        }
+
+        .dual-modal-body .output-column .column-body {
+            padding: 16px;
+            font-family: 'PT Astra Serif', 'Times New Roman', serif;
+            font-size: 18px;
+            line-height: 1.8;
+            color: #212529;
+            white-space: pre-wrap;
+            word-break: break-word;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            position: relative;
+        }
+
+        .dual-modal-body .output-column .column-body:empty::before {
+            content: "Текст не загружен";
+            color: #adb5bd;
+            font-style: italic;
+        }
+
+        .dual-modal-body .output-column .column-body::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        .dual-modal-body .output-column .column-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .dual-modal-body .output-column .column-body::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .dual-modal-body .output-column .column-body::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .scrollbar-wrapper {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .scrollbar-wrapper .column-body {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+
+        .scrollbar-indicator {
+            position: absolute;
+            right: 0;
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0.8;
+        }
+
+        .scrollbar-indicator.left-indicator {
+            background: #d0314e;
+            right: 6px;
+        }
+
+        .scrollbar-indicator.right-indicator {
+            background: #2b8c5e;
+            right: 6px;
+        }
+
+        .diff-char-left {
+            background-color: #d0314e;
+            color: white;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        .diff-char-right {
+            background-color: #2b8c5e;
+            color: white;
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        .dual-modal-indicators {
+            display: none;
+            gap: 5px;
+            margin-top: 8px;
+            padding: 0;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .dual-modal-indicators.active {
+            display: flex;
+        }
+
+        .dual-modal-indicators .indicator {
+            flex: 1;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .dual-modal-indicators .indicator .indicator-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            transition: width 0.1s ease;
+        }
+
+        .dual-modal-indicators .indicator .indicator-bar.left-bar {
+            background: #d0314e;
+        }
+
+        .dual-modal-indicators .indicator .indicator-bar.right-bar {
+            background: #2b8c5e;
+        }
+
+        /* ===== КНОПКА НАВЕРХ ===== */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #007bff;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 12px rgba(0, 123, 255, 0.4);
+            transition: all 0.3s ease;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .scroll-top-btn.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .scroll-top-btn:hover {
+            background: #0069d9;
+            transform: translateY(-2px);
+        }
+ 
+        .btn-outline-secondary {
+            color: #212529;
+            background-color: transparent;
+            border-color: #ced4da;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .files-loaded-info {
+                flex-direction: column;
+                align-items: stretch !important;
+            }
+
+            .files-loaded-info .swap-btn {
+                align-self: center;
+            }
+
+            .btn-compare {
+                min-width: 100px;
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+
+            .scroll-top-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
+            }
+
+            .dual-modal {
+                padding: 10px 12px 12px 12px;
+            }
+
+            .dual-modal-body {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .dual-modal-body .output-column {
+                max-height: 50%;
+                min-height: 150px;
+            }
+
+            .dual-modal-body .output-column .column-body {
+                min-height: 100px;
+            }
+
+            .dual-modal-header .modal-title {
+                font-size: 16px;
+            }
+
+            .legend {
+                gap: 10px;
+                font-size: 12px;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar-left {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-compare {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-card">
+        <h1>Сравнение ODT-файлов</h1>
+
+        <!-- Зона загрузки -->
+        <div class="upload-section">
+            <div class="double-upload-zone" id="doubleDropZone">
+                <span class="double-upload-icon">📁</span>
+                <div class="double-upload-text">Перетащите два ODT-файла</div>
+                <div class="double-upload-hint">или кликните, чтобы выбрать (Ctrl/Shift для выбора двух)</div>
+                <input type="file" id="doubleFileInput" class="double-file-input"
+                    accept=".odt,application/vnd.oasis.opendocument.text" multiple />
+            </div>
+
+            <div class="files-loaded-info" id="filesLoadedInfo">
+                <span class="file-loaded">
+                    <span class="dot empty-dot" id="leftDot"></span>
+                    <span id="leftFileName">левый: не выбран</span>
+                </span>
+                <span class="file-loaded">
+                    <span class="dot empty-dot" id="rightDot"></span>
+                    <span id="rightFileName">правый: не выбран</span>
+                </span>
+                <button class="swap-btn" id="swapBtn" disabled title="Поменять местами левый и правый файл">🔄 Поменять
+                    местами</button>
+            </div>
+        </div>
+
+        <!-- Легенда -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color left"></div><span>Удалено (только в левом)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color right"></div><span>Добавлено (только в правом)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color diff"></div><span>Строка с изменениями</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color same"></div><span>Совпадает</span>
+            </div>
+        </div>
+ 
+        <!-- Кнопки -->
+        <div class="action-bar">
+            <div class="action-bar-left">
+                <button class="btn btn-primary" id="compareBtn" disabled>
+                    <span class="spinner"></span>
+                    <span class="btn-text">Сравнить файлы</span>
+                </button>
+                <button class="btn btn-outline-secondary" id="clearBtn-odt" disabled><img src="/img/clear.png" alt="">
+                    Очистить</button>
+            </div>
+        </div>
+
+        <!-- Прогресс-бар -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar-custom" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- Модальное окно -->
+    <div class="dual-modal" id="dualModal">
+        <div class="dual-modal-header">
+            <span class="modal-title">📋 Сравнение двух файлов</span>
+            <button class="modal-close" id="modalClose" aria-label="Закрыть">✕</button>
+        </div>
+        <div class="dual-modal-body" id="dualModalBody">
+            <div class="output-column" id="leftColumn">
+                <div class="column-header left-header">🔴 Левый файл</div>
+                <div class="scrollbar-wrapper" id="leftScrollWrapper">
+                    <div class="column-body" id="leftOutputBody"></div>
+                    <div id="leftIndicators"></div>
+                </div>
+            </div>
+            <div class="output-column" id="rightColumn">
+                <div class="column-header right-header">🟢 Правый файл</div>
+                <div class="scrollbar-wrapper" id="rightScrollWrapper">
+                    <div class="column-body" id="rightOutputBody"></div>
+                    <div id="rightIndicators"></div>
+                </div>
+            </div>
+        </div>
+        <div class="dual-modal-indicators" id="modalIndicators">
+            <div class="indicator">
+                <div class="indicator-bar left-bar" id="modalLeftIndicator"></div>
+            </div>
+            <div class="indicator">
+                <div class="indicator-bar right-bar" id="modalRightIndicator"></div>
+            </div>
+        </div>
+    </div>
+
+    <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Наверх">↑</button>
+
+    <script>
+        (function () {
+            "use strict";
+
+            // =============================================================
+            // ЭЛЕМЕНТЫ DOM
+            // =============================================================
+            const doubleDropZone = document.getElementById('doubleDropZone');
+            const doubleFileInput = document.getElementById('doubleFileInput');
+            const leftFileName = document.getElementById('leftFileName');
+            const rightFileName = document.getElementById('rightFileName');
+            const leftDot = document.getElementById('leftDot');
+            const rightDot = document.getElementById('rightDot');
+            const swapBtn = document.getElementById('swapBtn');
+
+            const compareBtn = document.getElementById('compareBtn');
+            const clearBtn_odt = document.getElementById('clearBtn-odt');
+
+            const dualModal = document.getElementById('dualModal');
+            const modalClose = document.getElementById('modalClose');
+            const leftOutputBody = document.getElementById('leftOutputBody');
+            const rightOutputBody = document.getElementById('rightOutputBody');
+            const leftColumn = document.getElementById('leftColumn');
+            const rightColumn = document.getElementById('rightColumn');
+            const modalLeftIndicator = document.getElementById('modalLeftIndicator');
+            const modalRightIndicator = document.getElementById('modalRightIndicator');
+            const modalIndicators = document.getElementById('modalIndicators');
+
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+
+            // =============================================================
+            // СОСТОЯНИЕ
+            // =============================================================
+            let leftFile = null;
+            let rightFile = null;
+            let diffResult = '';
+            let progressInterval = null;
+            let isProcessing = false;
+            let hasResult = false;
+            let cachedLeftText = '';
+            let cachedRightText = '';
+            let cachedLeftHtml = '';
+            let cachedRightHtml = '';
+            let isModalOpen = false;
+            let isSyncingScroll = false;
+            let leftParagraphs = [];
+            let rightParagraphs = [];
+            let prefixMap = {};
+            let scrollTimeout = null;
+            let isUserScrolling = false;
+            let scrollEndTimer = null;
+            let diffPositions = { left: [], right: [] };
+
+            // =============================================================
+            // МОДАЛЬНОЕ ОКНО
+            // =============================================================
+            function openModal() {
+                isModalOpen = true;
+                dualModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                setTimeout(() => {
+                    setupParagraphScrollSync();
+                    updateScrollbarIndicators();
+                }, 200);
+            }
+
+            function closeModal() {
+                isModalOpen = false;
+                dualModal.classList.remove('active');
+                document.body.style.overflow = '';
+
+                modalIndicators.classList.remove('active');
+                modalLeftIndicator.style.width = '0%';
+                modalRightIndicator.style.width = '0%';
+            }
+
+            modalClose.addEventListener('click', closeModal);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && isModalOpen) {
+                    closeModal();
+                }
+            });
+
+            dualModal.addEventListener('click', function (e) {
+                if (e.target === dualModal || e.target === dualModal.querySelector('.dual-modal-body')) {
+                    closeModal();
+                }
+            });
+
+            // =============================================================
+            // ПАРСИНГ ODT
+            // =============================================================
+            function parseStylesFromXML(xmlDoc) {
+                const styleMap = {};
+
+                const autoStyles = xmlDoc.querySelector('office\\:automatic-styles');
+                if (autoStyles) {
+                    const styles = autoStyles.querySelectorAll('style\\:style');
+                    for (let s of styles) {
+                        const name = s.getAttribute('style:name');
+                        if (name) {
+                            const props = s.querySelector('style\\:text-properties');
+                            if (props) {
+                                styleMap[name] = {
+                                    fontWeight: props.getAttribute('fo:font-weight') || null,
+                                    fontStyle: props.getAttribute('fo:font-style') || null,
+                                    color: props.getAttribute('fo:color') || null,
+                                    fontSize: props.getAttribute('fo:font-size') || null,
+                                    underline: props.getAttribute('style:text-underline-style') || null,
+                                    strikeThrough: props.getAttribute('style:text-line-through-style') || null
+                                };
+                            }
+                        }
+                    }
+                }
+
+                const commonStyles = xmlDoc.querySelectorAll('style\\:style');
+                for (let s of commonStyles) {
+                    const name = s.getAttribute('style:name');
+                    if (name && !styleMap[name]) {
+                        const props = s.querySelector('style\\:text-properties');
+                        if (props) {
+                            styleMap[name] = {
+                                fontWeight: props.getAttribute('fo:font-weight') || null,
+                                fontStyle: props.getAttribute('fo:font-style') || null,
+                                color: props.getAttribute('fo:color') || null,
+                                fontSize: props.getAttribute('fo:font-size') || null,
+                                underline: props.getAttribute('style:text-underline-style') || null,
+                                strikeThrough: props.getAttribute('style:text-line-through-style') || null
+                            };
+                        }
+                    }
+                }
+
+                return styleMap;
+            }
+
+            function parseODTWithFormatting(xmlString, stylesXmlString) {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+                const parserError = xmlDoc.querySelector('parsererror');
+                if (parserError) {
+                    console.warn('Ошибка парсинга XML');
+                    return extractTextSimple(xmlString);
+                }
+
+                let styleMap = parseStylesFromXML(xmlDoc);
+
+                if (stylesXmlString) {
+                    const stylesDoc = parser.parseFromString(stylesXmlString, "text/xml");
+                    const stylesFromFile = parseStylesFromXML(stylesDoc);
+                    for (let key in stylesFromFile) {
+                        if (!styleMap[key]) {
+                            styleMap[key] = stylesFromFile[key];
+                        }
+                    }
+                }
+
+                let body = xmlDoc.querySelector('office\\:body');
+                if (!body) {
+                    body = xmlDoc.querySelector('body');
+                }
+                if (!body) {
+                    console.warn('Не найдено body');
+                    return extractTextSimple(xmlString);
+                }
+
+                let textBody = body.querySelector('office\\:text');
+                if (!textBody) {
+                    textBody = body.querySelector('text');
+                }
+                if (!textBody) {
+                    console.warn('Не найдено text');
+                    return extractTextSimple(xmlString);
+                }
+
+                const paragraphs = textBody.querySelectorAll('text\\:p, p');
+
+                let textParts = [];
+                let htmlParts = [];
+
+                for (let p of paragraphs) {
+                    const styleName = p.getAttribute('text:style-name') || '';
+                    const paragraphStyle = styleMap[styleName] || {};
+
+                    let paragraphText = '';
+                    let paragraphHtml = '';
+
+                    for (let child of p.childNodes) {
+                        const result = processNode(child, styleMap, paragraphStyle);
+                        paragraphText += result.text;
+                        paragraphHtml += result.html;
+                    }
+
+                    paragraphText = paragraphText.replace(/\s+/g, ' ').trim();
+                    paragraphHtml = paragraphHtml.trim();
+
+                    if (paragraphText.length > 0) {
+                        textParts.push(paragraphText);
+                        htmlParts.push(paragraphHtml);
+                    }
+                }
+
+                if (textParts.length === 0) {
+                    console.warn('Не найдено абзацев, используем простой метод');
+                    return extractTextSimple(xmlString);
+                }
+
+                return {
+                    text: textParts.join('\n\n'),
+                    html: htmlParts.join('\n\n')
+                };
+            }
+
+            function processNode(node, styleMap, inheritedStyle) {
+                if (!node) return { text: '', html: '' };
+
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const content = node.textContent || '';
+                    return { text: content, html: escapeHtml(content) };
+                }
+
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const tagName = node.tagName.toLowerCase();
+
+                    if (tagName === 'text:span' || tagName === 'span') {
+                        const styleName = node.getAttribute('text:style-name') || '';
+                        const spanStyle = styleMap[styleName] || {};
+
+                        const combinedStyle = { ...inheritedStyle, ...spanStyle };
+
+                        let innerText = '';
+                        let innerHtml = '';
+
+                        for (let child of node.childNodes) {
+                            const result = processNode(child, styleMap, combinedStyle);
+                            innerText += result.text;
+                            innerHtml += result.html;
+                        }
+
+                        if (!innerText.trim()) return { text: '', html: '' };
+
+                        let classes = [];
+                        let inlineStyles = [];
+
+                        if (combinedStyle.fontWeight === 'bold' || combinedStyle.fontWeight === '700') {
+                            classes.push('format-bold');
+                        }
+
+                        if (combinedStyle.fontStyle === 'italic') {
+                            classes.push('format-italic');
+                        }
+
+                        if (combinedStyle.underline && combinedStyle.underline !== 'none') {
+                            classes.push('format-underline');
+                        }
+
+                        if (combinedStyle.strikeThrough && combinedStyle.strikeThrough !== 'none') {
+                            classes.push('format-strikethrough');
+                        }
+
+                        if (combinedStyle.color && combinedStyle.color !== '#000000') {
+                            inlineStyles.push(`color: ${combinedStyle.color}`);
+                        }
+
+                        if (combinedStyle.fontSize) {
+                            inlineStyles.push(`font-size: ${combinedStyle.fontSize}`);
+                        }
+
+                        let resultHtml = innerHtml;
+                        if (classes.length > 0 || inlineStyles.length > 0) {
+                            const classAttr = classes.length > 0 ? ` class="${classes.join(' ')}"` : '';
+                            const styleAttr = inlineStyles.length > 0 ? ` style="${inlineStyles.join('; ')}"` : '';
+                            resultHtml = `<span${classAttr}${styleAttr}>${innerHtml}</span>`;
+                        }
+
+                        return { text: innerText, html: resultHtml };
+                    }
+
+                    if (tagName === 'text:s' || tagName === 's') {
+                        const count = parseInt(node.getAttribute('text:c')) || 1;
+                        const spaces = ' '.repeat(count);
+                        return { text: spaces, html: spaces };
+                    }
+
+                    if (tagName === 'text:tab' || tagName === 'tab') {
+                        return { text: '    ', html: '    ' };
+                    }
+
+                    if (tagName === 'text:line-break' || tagName === 'line-break') {
+                        return { text: '\n', html: '\n' };
+                    }
+
+                    let resultText = '';
+                    let resultHtml = '';
+                    for (let child of node.childNodes) {
+                        const result = processNode(child, styleMap, inheritedStyle);
+                        resultText += result.text;
+                        resultHtml += result.html;
+                    }
+                    return { text: resultText, html: resultHtml };
+                }
+
+                return { text: '', html: '' };
+            }
+
+            function extractTextSimple(xmlString) {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+                const paragraphs = xmlDoc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, text\\:p, text\\:h1, text\\:h2, text\\:h3, text\\:h4, text\\:h5, text\\:h6');
+                let textParts = [];
+                let htmlParts = [];
+
+                if (paragraphs.length > 0) {
+                    for (let p of paragraphs) {
+                        let paragraphText = '';
+                        function getTextContent(node) {
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                paragraphText += node.textContent;
+                            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                                const tagName = node.tagName.toLowerCase();
+                                if (tagName === 'tab' || tagName === 'text:tab') {
+                                    paragraphText += '    ';
+                                } else if (tagName === 's' || tagName === 'text:s') {
+                                    const count = parseInt(node.getAttribute('c')) || 1;
+                                    paragraphText += ' '.repeat(count);
+                                } else if (tagName === 'line-break' || tagName === 'text:line-break') {
+                                    paragraphText += '\n';
+                                } else {
+                                    for (let child of node.childNodes) {
+                                        getTextContent(child);
+                                    }
+                                }
+                            }
+                        }
+                        for (let child of p.childNodes) {
+                            getTextContent(child);
+                        }
+                        paragraphText = paragraphText.replace(/\s+/g, ' ').trim();
+                        if (paragraphText.length > 0) {
+                            textParts.push(paragraphText);
+                            htmlParts.push(escapeHtml(paragraphText));
+                        }
+                    }
+                } else {
+                    const bodyElement = xmlDoc.querySelector('office\\:body, body');
+                    let root = bodyElement || xmlDoc.documentElement;
+                    const xpath = "//text()";
+                    const nodesSnapshot = xmlDoc.evaluate(xpath, root, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+                    let rawTexts = [];
+                    for (let i = 0; i < nodesSnapshot.snapshotLength; i++) {
+                        const node = nodesSnapshot.snapshotItem(i);
+                        if (node && node.nodeType === Node.TEXT_NODE) {
+                            const val = node.textContent.trim();
+                            if (val.length > 0) {
+                                rawTexts.push(val);
+                            }
+                        }
+                    }
+                    if (rawTexts.length > 0) {
+                        const combined = rawTexts.join(' ');
+                        textParts = [combined];
+                        htmlParts = [escapeHtml(combined)];
+                    }
+                }
+
+                return {
+                    text: textParts.join('\n\n').trim(),
+                    html: htmlParts.join('\n\n').trim()
+                };
+            }
+
+            function extractTextFromODT(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        try {
+                            const arrayBuffer = e.target.result;
+                            const zip = new JSZip();
+                            zip.loadAsync(arrayBuffer).then(function (zipData) {
+                                const contentFile = zipData.file("content.xml");
+                                if (!contentFile) {
+                                    reject(new Error("ODT-файл не содержит content.xml"));
+                                    return;
+                                }
+
+                                const stylesFile = zipData.file("styles.xml");
+                                let stylesXmlString = null;
+
+                                const contentPromise = contentFile.async("string");
+                                const stylesPromise = stylesFile ? stylesFile.async("string") : Promise.resolve(null);
+
+                                Promise.all([contentPromise, stylesPromise]).then(function ([xmlString, stylesXml]) {
+                                    try {
+                                        stylesXmlString = stylesXml;
+                                        const result = parseODTWithFormatting(xmlString, stylesXmlString);
+                                        resolve(result);
+                                    } catch (parseError) {
+                                        console.warn('Ошибка парсинга с форматированием, используем простой метод:', parseError);
+                                        const fallbackResult = extractTextSimple(xmlString);
+                                        resolve(fallbackResult);
+                                    }
+                                }).catch(reject);
+                            }).catch(reject);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.onerror = function () {
+                        reject(new Error("Ошибка чтения файла"));
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            // =============================================================
+            // ПОСТРОЕНИЕ КАРТЫ ПРЕФИКСОВ
+            // =============================================================
+            function buildPrefixMap(text1, text2, prefixLength = 15) {
+                const lines1 = text1.split('\n');
+                const lines2 = text2.split('\n');
+
+                const clean1 = lines1.map(l => l.trim().replace(/\s+/g, ' '));
+                const clean2 = lines2.map(l => l.trim().replace(/\s+/g, ' '));
+
+                leftParagraphs = lines1;
+                rightParagraphs = lines2;
+
+                prefixMap = {};
+                for (let j = 0; j < clean2.length; j++) {
+                    const text = clean2[j];
+                    if (!text) continue;
+
+                    const prefix = text.substring(0, Math.min(prefixLength, text.length));
+                    if (!prefix) continue;
+
+                    if (!prefixMap[prefix]) {
+                        prefixMap[prefix] = [];
+                    }
+                    prefixMap[prefix].push(j);
+                }
+
+                findDiffPositions(clean1, clean2);
+
+                return { lines1: clean1, lines2: clean2 };
+            }
+
+            function findDiffPositions(lines1, lines2) {
+                diffPositions.left = [];
+                diffPositions.right = [];
+
+                const dmp = new diff_match_patch();
+
+                const text1 = lines1.join('\n');
+                const text2 = lines2.join('\n');
+
+                const diffs = dmp.diff_main(text1, text2);
+                dmp.diff_cleanupSemantic(diffs);
+
+                let pos1 = 0, pos2 = 0;
+                let lineIndex1 = 0, lineIndex2 = 0;
+
+                for (let i = 0; i < diffs.length; i++) {
+                    const [type, text] = diffs[i];
+                    const lines = text.split('\n');
+
+                    for (let j = 0; j < lines.length; j++) {
+                        const line = lines[j];
+
+                        if (line === '' && j < lines.length - 1) {
+                            if (type === -1) {
+                                if (lineIndex1 < lines1.length) {
+                                    diffPositions.left.push(lineIndex1);
+                                    lineIndex1++;
+                                }
+                            } else if (type === 1) {
+                                if (lineIndex2 < lines2.length) {
+                                    diffPositions.right.push(lineIndex2);
+                                    lineIndex2++;
+                                }
+                            } else {
+                                if (lineIndex1 < lines1.length) lineIndex1++;
+                                if (lineIndex2 < lines2.length) lineIndex2++;
+                            }
+                            continue;
+                        }
+
+                        if (line !== '' || (j === lines.length - 1 && line === '')) {
+                            if (type === -1) {
+                                if (lineIndex1 < lines1.length && line.trim() !== '') {
+                                    diffPositions.left.push(lineIndex1);
+                                }
+                                lineIndex1++;
+                            } else if (type === 1) {
+                                if (lineIndex2 < lines2.length && line.trim() !== '') {
+                                    diffPositions.right.push(lineIndex2);
+                                }
+                                lineIndex2++;
+                            } else {
+                                if (lineIndex1 < lines1.length) lineIndex1++;
+                                if (lineIndex2 < lines2.length) lineIndex2++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function getParagraphPrefix(text, prefixLength = 15) {
+                const clean = text.trim().replace(/\s+/g, ' ');
+                return clean.substring(0, Math.min(prefixLength, clean.length));
+            }
+
+            // =============================================================
+            // ИНДИКАТОРЫ СКРОЛЛА
+            // =============================================================
+            function updateScrollbarIndicators() {
+                const leftScrollable = leftColumn.querySelector('.column-body');
+                const rightScrollable = rightColumn.querySelector('.column-body');
+
+                if (!leftScrollable || !rightScrollable) return;
+
+                updateSingleScrollbarIndicator(leftScrollable, diffPositions.left, 'left-indicator', 'leftIndicators');
+                updateSingleScrollbarIndicator(rightScrollable, diffPositions.right, 'right-indicator', 'rightIndicators');
+            }
+
+            function updateSingleScrollbarIndicator(scrollable, positions, className, containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                if (positions.length === 0) return;
+
+                const scrollHeight = scrollable.scrollHeight;
+                const clientHeight = scrollable.clientHeight;
+
+                if (scrollHeight <= clientHeight) return;
+
+                const children = scrollable.children;
+                const totalChildren = children.length;
+                const maxScroll = scrollHeight - clientHeight;
+
+                for (let pos of positions) {
+                    if (pos >= totalChildren) continue;
+
+                    const child = children[pos];
+                    if (!child) continue;
+
+                    const childTop = child.offsetTop;
+
+                    let percent = maxScroll > 0 ? childTop / maxScroll : 0;
+                    percent = Math.max(0, Math.min(1, percent));
+
+                    let indicatorTop = percent * clientHeight;
+
+                    const padding = 2;
+                    indicatorTop = Math.max(padding, Math.min(clientHeight - 4 - padding, indicatorTop));
+
+                    const indicator = document.createElement('div');
+                    indicator.className = `scrollbar-indicator ${className}`;
+                    indicator.style.top = indicatorTop + 'px';
+                    container.appendChild(indicator);
+                }
+            }
+
+            // =============================================================
+            // СИНХРОНИЗАЦИЯ СКРОЛЛА
+            // =============================================================
+            function syncScrollLeftToRight() {
+                if (isSyncingScroll) return;
+                if (!isUserScrolling) return;
+
+                const leftScrollable = leftColumn.querySelector('.column-body');
+                const rightScrollable = rightColumn.querySelector('.column-body');
+
+                if (!leftScrollable || !rightScrollable) return;
+                if (leftParagraphs.length === 0 || rightParagraphs.length === 0) return;
+
+                const children = leftScrollable.children;
+                if (children.length === 0) return;
+
+                const scrollTop = leftScrollable.scrollTop;
+                const containerHeight = leftScrollable.clientHeight;
+                if (containerHeight === 0) return;
+
+                const centerY = scrollTop + containerHeight / 2;
+
+                let bestIndex = 0;
+                let bestDistance = Infinity;
+
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    const childTop = child.offsetTop;
+                    const childHeight = child.offsetHeight || 20;
+                    const childCenter = childTop + childHeight / 2;
+                    const distance = Math.abs(childCenter - centerY);
+
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        bestIndex = i;
+                    }
+                }
+
+                const sourceText = leftParagraphs[bestIndex] || '';
+                const prefix = getParagraphPrefix(sourceText, 15);
+
+                if (!prefix) {
+                    const ratio = leftScrollable.scrollTop / (leftScrollable.scrollHeight - leftScrollable.clientHeight);
+                    const targetScrollPos = ratio * (rightScrollable.scrollHeight - rightScrollable.clientHeight);
+                    if (!isNaN(targetScrollPos) && targetScrollPos > 0) {
+                        isSyncingScroll = true;
+                        rightScrollable.scrollTo({
+                            top: targetScrollPos,
+                            behavior: 'smooth'
+                        });
+                        setTimeout(() => {
+                            isSyncingScroll = false;
+                        }, 150);
+                    }
+                    updateModalIndicators();
+                    return;
+                }
+
+                let bestMatch = -1;
+                let bestDiff = Infinity;
+                const shortPrefix = prefix.substring(0, Math.min(10, prefix.length));
+
+                for (let j = 0; j < rightParagraphs.length; j++) {
+                    const rightText = rightParagraphs[j];
+                    if (!rightText) continue;
+
+                    const rightPrefix = getParagraphPrefix(rightText, 15);
+                    if (!rightPrefix) continue;
+
+                    const isMatch = rightPrefix === prefix;
+                    const isShortMatch = rightPrefix.substring(0, Math.min(10, rightPrefix.length)) === shortPrefix;
+
+                    if (isMatch || isShortMatch) {
+                        const posDiff = Math.abs(j - bestIndex);
+                        if (posDiff < bestDiff) {
+                            bestDiff = posDiff;
+                            bestMatch = j;
+                        }
+                    }
+                }
+
+                if (bestMatch === -1) {
+                    const ratio = leftScrollable.scrollTop / (leftScrollable.scrollHeight - leftScrollable.clientHeight);
+                    const targetScrollPos = ratio * (rightScrollable.scrollHeight - rightScrollable.clientHeight);
+                    if (!isNaN(targetScrollPos) && targetScrollPos > 0) {
+                        isSyncingScroll = true;
+                        rightScrollable.scrollTo({
+                            top: targetScrollPos,
+                            behavior: 'smooth'
+                        });
+                        setTimeout(() => {
+                            isSyncingScroll = false;
+                        }, 150);
+                    }
+                    updateModalIndicators();
+                    return;
+                }
+
+                const leftChild = children[bestIndex];
+                if (!leftChild) {
+                    updateModalIndicators();
+                    return;
+                }
+
+                const leftOffsetTop = leftChild.offsetTop;
+
+                const targetChildren = rightScrollable.children;
+                if (bestMatch >= targetChildren.length) {
+                    updateModalIndicators();
+                    return;
+                }
+
+                const rightChild = targetChildren[bestMatch];
+                if (!rightChild) {
+                    updateModalIndicators();
+                    return;
+                }
+
+                const rightOffsetTop = rightChild.offsetTop;
+
+                const currentLeftScroll = leftScrollable.scrollTop;
+                const targetRightScroll = currentLeftScroll + (rightOffsetTop - leftOffsetTop);
+
+                const maxRightScroll = rightScrollable.scrollHeight - rightScrollable.clientHeight;
+                const finalTarget = Math.max(0, Math.min(maxRightScroll, targetRightScroll));
+
+                if (Math.abs(rightScrollable.scrollTop - finalTarget) > 3) {
+                    isSyncingScroll = true;
+                    rightScrollable.scrollTo({
+                        top: finalTarget,
+                        behavior: 'smooth'
+                    });
+                    setTimeout(() => {
+                        isSyncingScroll = false;
+                    }, 150);
+                }
+
+                updateModalIndicators();
+                updateScrollbarIndicators();
+            }
+
+            function setupParagraphScrollSync() {
+                const leftScrollable = leftColumn.querySelector('.column-body');
+                const rightScrollable = rightColumn.querySelector('.column-body');
+
+                if (!leftScrollable || !rightScrollable) return;
+                if (leftParagraphs.length === 0 || rightParagraphs.length === 0) return;
+
+                if (window._leftScrollHandler) {
+                    leftScrollable.removeEventListener('scroll', window._leftScrollHandler);
+                }
+                if (window._rightScrollHandler) {
+                    rightScrollable.removeEventListener('scroll', window._rightScrollHandler);
+                }
+
+                const leftHandler = function () {
+                    if (isSyncingScroll) return;
+
+                    isUserScrolling = true;
+                    clearTimeout(scrollEndTimer);
+                    scrollEndTimer = setTimeout(() => {
+                        isUserScrolling = false;
+                    }, 150);
+
+                    if (scrollTimeout) {
+                        cancelAnimationFrame(scrollTimeout);
+                    }
+
+                    scrollTimeout = requestAnimationFrame(() => {
+                        syncScrollLeftToRight();
+                        scrollTimeout = null;
+                    });
+                };
+
+                const rightHandler = function () {
+                    updateModalIndicators();
+                    updateScrollbarIndicators();
+                };
+
+                window._leftScrollHandler = leftHandler;
+                window._rightScrollHandler = rightHandler;
+
+                leftScrollable.addEventListener('scroll', leftHandler, { passive: true });
+                rightScrollable.addEventListener('scroll', rightHandler, { passive: true });
+
+                modalIndicators.classList.add('active');
+                updateModalIndicators();
+
+                leftScrollable.scrollTop = 0;
+                rightScrollable.scrollTop = 0;
+                updateModalIndicators();
+                updateScrollbarIndicators();
+            }
+
+            function updateModalIndicators() {
+                const leftScrollable = leftColumn.querySelector('.column-body');
+                const rightScrollable = rightColumn.querySelector('.column-body');
+
+                if (!leftScrollable || !rightScrollable) return;
+
+                const leftMax = leftScrollable.scrollHeight - leftScrollable.clientHeight;
+                const rightMax = rightScrollable.scrollHeight - rightScrollable.clientHeight;
+
+                const leftPercent = leftMax > 0 ? (leftScrollable.scrollTop / leftMax) * 100 : 0;
+                const rightPercent = rightMax > 0 ? (rightScrollable.scrollTop / rightMax) * 100 : 0;
+
+                modalLeftIndicator.style.width = leftPercent + '%';
+                modalRightIndicator.style.width = rightPercent + '%';
+            }
+
+            // =============================================================
+            // ПРОГРЕСС-БАР
+            // =============================================================
+            function startProgress() {
+                progressContainer.classList.add('active');
+                progressBar.classList.add('animate');
+                progressBar.style.width = '0%';
+                let progress = 0;
+                if (progressInterval) clearInterval(progressInterval);
+                progressInterval = setInterval(() => {
+                    if (progress < 90) {
+                        progress += Math.random() * 10;
+                        if (progress > 90) progress = 90;
+                        progressBar.style.width = progress + '%';
+                    }
+                }, 200);
+            }
+
+            function completeProgress() {
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                progressBar.classList.remove('animate');
+                progressBar.style.width = '100%';
+                setTimeout(() => {
+                    progressContainer.classList.remove('active');
+                    progressBar.style.width = '0%';
+                }, 600);
+            }
+
+            // =============================================================
+            // РЕНДЕРИНГ
+            // =============================================================
+            function renderDiff(diffData) {
+                leftOutputBody.innerHTML = diffData.leftHtml || '<div style="color: #adb5bd; font-style: italic;">Текст не загружен</div>';
+                rightOutputBody.innerHTML = diffData.rightHtml || '<div style="color: #adb5bd; font-style: italic;">Текст не загружен</div>';
+
+                if (cachedLeftText && cachedRightText) {
+                    buildPrefixMap(cachedLeftText, cachedRightText, 15);
+                }
+
+                setTimeout(() => {
+                    setupParagraphScrollSync();
+                    updateScrollbarIndicators();
+                }, 150);
+            }
+
+            // =============================================================
+            // ОСНОВНАЯ ЛОГИКА
+            // =============================================================
+            async function performComparison() {
+                if (!leftFile || !rightFile) return;
+                if (isProcessing) return;
+
+                isProcessing = true;
+                hasResult = false;
+
+                compareBtn.disabled = true;
+                compareBtn.classList.add('loading');
+                compareBtn.querySelector('.btn-text').textContent = 'Сравнение...';
+                startProgress();
+
+                try {
+                    const [result1, result2] = await Promise.all([
+                        extractTextFromODT(leftFile),
+                        extractTextFromODT(rightFile)
+                    ]);
+
+                    const text1 = result1.text;
+                    const text2 = result2.text;
+                    const html1 = result1.html;
+                    const html2 = result2.html;
+
+                    cachedLeftText = text1;
+                    cachedRightText = text2;
+                    cachedLeftHtml = html1;
+                    cachedRightHtml = html2;
+
+                    const dmp = new diff_match_patch();
+                    const diffs = dmp.diff_main(text1, text2);
+                    dmp.diff_cleanupSemantic(diffs);
+
+                    let leftHtml = '';
+                    let rightHtml = '';
+                    let hasDifferences = false;
+                    let pos1 = 0, pos2 = 0;
+
+                    for (let i = 0; i < diffs.length; i++) {
+                        const [type, processedText] = diffs[i];
+                        const length = processedText.length;
+
+                        if (type === 0) {
+                            const originalHtml = html1.substring(pos1, pos1 + length);
+                            leftHtml += originalHtml;
+                            rightHtml += originalHtml;
+                            pos1 += length;
+                            pos2 += length;
+                        } else if (type === -1) {
+                            const originalHtml = html1.substring(pos1, pos1 + length);
+                            leftHtml += `<span class="diff-char-left">${originalHtml}</span>`;
+                            pos1 += length;
+                            hasDifferences = true;
+                        } else if (type === 1) {
+                            const originalHtml = html2.substring(pos2, pos2 + length);
+                            rightHtml += `<span class="diff-char-right">${originalHtml}</span>`;
+                            pos2 += length;
+                            hasDifferences = true;
+                        }
+                    }
+
+                    const leftLines = leftHtml.split('\n');
+                    const rightLines = rightHtml.split('\n');
+                    let finalLeftHtml = '';
+                    let finalRightHtml = '';
+
+                    const maxLines = Math.max(leftLines.length, rightLines.length);
+                    for (let i = 0; i < maxLines; i++) {
+                        const leftLine = i < leftLines.length ? leftLines[i] : '';
+                        const rightLine = i < rightLines.length ? rightLines[i] : '';
+
+                        if (leftLine.trim() !== '' || rightLine.trim() !== '') {
+                            finalLeftHtml += `<div>${leftLine || ''}</div>`;
+                            finalRightHtml += `<div>${rightLine || ''}</div>`;
+                        }
+                    }
+
+                    buildPrefixMap(text1, text2, 15);
+
+                    const diffData = {
+                        leftHtml: finalLeftHtml || 'Текст пуст',
+                        rightHtml: finalRightHtml || 'Текст пуст',
+                        hasDifferences: hasDifferences
+                    };
+
+                    hasResult = true;
+
+                    openModal();
+                    renderDiff(diffData);
+
+                    diffResult = 'done';
+                    updateButtons();
+
+                } catch (error) {
+                    console.error(error);
+                    alert('Ошибка при сравнении: ' + error.message);
+                } finally {
+                    isProcessing = false;
+                    compareBtn.disabled = false;
+                    compareBtn.classList.remove('loading');
+                    compareBtn.querySelector('.btn-text').textContent = 'Сравнить файлы';
+                    completeProgress();
+                    updateButtons();
+                }
+            }
+
+            function updateDoubleUploadInfo() {
+                const hasBoth = leftFile !== null && rightFile !== null;
+                if (leftFile) {
+                    leftFileName.textContent = `левый: ${leftFile.name}`;
+                    leftDot.className = 'dot left-dot';
+                } else {
+                    leftFileName.textContent = 'левый: не выбран';
+                    leftDot.className = 'dot empty-dot';
+                }
+                if (rightFile) {
+                    rightFileName.textContent = `правый: ${rightFile.name}`;
+                    rightDot.className = 'dot right-dot';
+                } else {
+                    rightFileName.textContent = 'правый: не выбран';
+                    rightDot.className = 'dot empty-dot';
+                }
+                swapBtn.disabled = !hasBoth;
+                updateButtons();
+            }
+
+            function updateButtons() {
+                const hasLeft = leftFile !== null;
+                const hasRight = rightFile !== null;
+                compareBtn.disabled = !(hasLeft && hasRight) || isProcessing;
+                clearBtn_odt.disabled = !(hasLeft || hasRight || diffResult);
+            }
+
+            function setLeftFile(file) {
+                leftFile = file;
+                hasResult = false;
+                cachedLeftText = '';
+                cachedLeftHtml = '';
+                updateDoubleUploadInfo();
+            }
+
+            function setRightFile(file) {
+                rightFile = file;
+                hasResult = false;
+                cachedRightText = '';
+                cachedRightHtml = '';
+                updateDoubleUploadInfo();
+            }
+
+            function swapFiles() {
+                if (!leftFile || !rightFile) return;
+
+                const tempFile = leftFile;
+                leftFile = rightFile;
+                rightFile = tempFile;
+
+                const tempText = cachedLeftText;
+                cachedLeftText = cachedRightText;
+                cachedRightText = tempText;
+
+                const tempHtml = cachedLeftHtml;
+                cachedLeftHtml = cachedRightHtml;
+                cachedRightHtml = tempHtml;
+
+                updateDoubleUploadInfo();
+
+                if (leftFile && rightFile) {
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(leftFile);
+                    dataTransfer.items.add(rightFile);
+                    doubleFileInput.files = dataTransfer.files;
+                }
+
+                updateButtons();
+                hasResult = false;
+                diffResult = '';
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            async function handleCompare() {
+                if (!leftFile || !rightFile) {
+                    alert('Загрузите оба файла для сравнения.');
+                    return;
+                }
+                hasResult = false;
+                await performComparison();
+            }
+
+            function handleClear() {
+                leftFile = null;
+                rightFile = null;
+                cachedLeftText = '';
+                cachedRightText = '';
+                cachedLeftHtml = '';
+                cachedRightHtml = '';
+                diffResult = '';
+                hasResult = false;
+                leftParagraphs = [];
+                rightParagraphs = [];
+                prefixMap = {};
+                diffPositions = { left: [], right: [] };
+
+                doubleFileInput.value = '';
+
+                updateDoubleUploadInfo();
+
+                leftOutputBody.innerHTML = '';
+                rightOutputBody.innerHTML = '';
+                modalIndicators.classList.remove('active');
+                modalLeftIndicator.style.width = '0%';
+                modalRightIndicator.style.width = '0%';
+                updateButtons();
+
+                doubleDropZone.classList.remove('dragover');
+
+                document.getElementById('leftIndicators').innerHTML = '';
+                document.getElementById('rightIndicators').innerHTML = '';
+
+                if (isModalOpen) closeModal();
+            }
+
+            function setupDoubleUpload() {
+                doubleDropZone.addEventListener('click', () => { doubleFileInput.click(); });
+
+                doubleFileInput.addEventListener('change', (e) => {
+                    const files = e.target.files;
+                    if (files && files.length >= 2) {
+                        const file1 = files[0];
+                        const file2 = files[1];
+                        if (file1.name.toLowerCase().endsWith('.odt') && file2.name.toLowerCase().endsWith('.odt')) {
+                            setLeftFile(file1);
+                            setRightFile(file2);
+                            updateDoubleUploadInfo();
+                            hasResult = false;
+                        } else {
+                            alert('Оба файла должны иметь расширение .odt');
+                            doubleFileInput.value = '';
+                        }
+                    } else if (files && files.length === 1) {
+                        alert('Пожалуйста, выберите два файла. Используйте Ctrl/Shift для выбора двух файлов.');
+                        doubleFileInput.value = '';
+                    } else {
+                        doubleFileInput.value = '';
+                    }
+                });
+
+                doubleDropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    doubleDropZone.classList.add('dragover');
+                });
+
+                doubleDropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    doubleDropZone.classList.remove('dragover');
+                });
+
+                doubleDropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    doubleDropZone.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files && files.length >= 2) {
+                        const file1 = files[0];
+                        const file2 = files[1];
+                        if (file1.name.toLowerCase().endsWith('.odt') && file2.name.toLowerCase().endsWith('.odt')) {
+                            setLeftFile(file1);
+                            setRightFile(file2);
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(file1);
+                            dataTransfer.items.add(file2);
+                            doubleFileInput.files = dataTransfer.files;
+                            updateDoubleUploadInfo();
+                            hasResult = false;
+                        } else {
+                            alert('Оба файла должны иметь расширение .odt');
+                        }
+                    } else if (files && files.length === 1) {
+                        alert('Перетащите два файла одновременно.');
+                    }
+                });
+            }
+
+            // =============================================================
+            // ИНИЦИАЛИЗАЦИЯ
+            // =============================================================
+            swapBtn.addEventListener('click', swapFiles);
+            setupDoubleUpload();
+
+            compareBtn.addEventListener('click', handleCompare);
+            clearBtn_odt.addEventListener('click', handleClear);
+
+            updateDoubleUploadInfo();
+            updateButtons();
+
+            if (typeof JSZip === 'undefined') {
+                console.warn('⚠️ JSZip не загружен!');
+            }
+            if (typeof diff_match_patch === 'undefined') {
+                console.warn('⚠️ diff-match-patch не загружен!');
+            }
+
+            window.addEventListener('scroll', function () {
+                if (window.scrollY > 300) {
+                    scrollTopBtn.classList.add('visible');
+                } else {
+                    scrollTopBtn.classList.remove('visible');
+                }
+            });
+
+            scrollTopBtn.addEventListener('click', function () {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            let resizeTimeout;
+            window.addEventListener('resize', function () {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (isModalOpen) {
+                        updateModalIndicators();
+                        updateScrollbarIndicators();
+                    }
+                }, 200);
+            });
+        })();
+    </script>
+</body>
+
+</html>

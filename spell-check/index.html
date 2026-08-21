@@ -1,0 +1,1550 @@
+<!-- Office-Service/spell-check/index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Проверка орфографии</title>
+	<style>
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+			background: white;
+			min-height: 100vh;
+			padding: 0;
+			color: #212529;
+		}
+
+		.app-card {
+			max-width: 100%;
+			width: 100%;
+			background: white;
+			padding: 0;
+		}
+
+		h1 {
+			font-weight: 500;
+			font-size: 28px;
+			color: #212529;
+			margin-bottom: 6px;
+			padding: 0 4px;
+		}
+
+		.subtitle {
+			font-size: 16px;
+			color: #6c757d;
+			margin-bottom: 24px;
+			padding: 0 4px;
+		}
+
+		.input-section textarea {
+			width: 100%;
+			min-height: 140px;
+			padding: 14px 18px;
+			font-size: 15px;
+			line-height: 1.8;
+			font-family: inherit;
+			border: 1px solid #ced4da;
+			border-radius: 4px;
+			background: #ffffff;
+			resize: vertical;
+			transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+		}
+
+		.input-section textarea:focus {
+			border-color: #80bdff;
+			outline: 0;
+			box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			font-weight: 400;
+			text-align: center;
+			vertical-align: middle;
+			cursor: pointer;
+			padding: 8px 20px;
+			font-size: 16px;
+			line-height: 1.5;
+			border-radius: 4px;
+			border: 1px solid #ced4da;
+			transition: all 0.15s ease;
+			user-select: none;
+		}
+
+		.btn:disabled {
+			opacity: 0.65;
+			cursor: not-allowed;
+		}
+
+		.btn img {
+			display: inline-block;
+			height: 18px;
+			width: 18px;
+			flex-shrink: 0;
+			vertical-align: middle;
+		}
+
+		.btn-primary {
+			color: #fff;
+			background-color: #007bff;
+			border-color: #007bff;
+		}
+
+		.btn-primary:hover:not(:disabled) {
+			background-color: #0069d9;
+			border-color: #0062cc;
+		}
+
+		.btn-primary:focus:not(:disabled) {
+			outline: 0;
+			box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5);
+		}
+
+		.btn-outline-secondary {
+			color: #212529;
+			background-color: transparent;
+			border-color: #ced4da;
+		}
+
+		.btn-outline-secondary:hover:not(:disabled) {
+			background-color: #e9ecef;
+			border-color: #adb5bd;
+		}
+
+		.btn-sm {
+			padding: 6px 16px;
+			font-size: 14px;
+		}
+
+		.btn-success {
+			color: #fff;
+			background-color: #2b8c5e;
+			border-color: #2b8c5e;
+		}
+
+		.btn-success:hover:not(:disabled) {
+			background-color: #1e6b47;
+			border-color: #1a5f3f;
+		}
+
+		.action-bar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 16px 20px;
+			margin: 8px 0 20px;
+		}
+
+		.action-bar-left {
+			display: flex;
+			align-items: center;
+			gap: 20px;
+			flex-wrap: wrap;
+		}
+
+		.stats-badge {
+			font-size: 15px;
+			color: #495057;
+			background: #e9ecef;
+			padding: 6px 18px;
+			border-radius: 4px;
+			white-space: nowrap;
+		}
+
+		.progress-bar {
+			display: none;
+			width: 100%;
+			height: 4px;
+			background: #e9ecef;
+			border-radius: 4px;
+			margin-top: 12px;
+			overflow: hidden;
+		}
+
+		.progress-bar.active {
+			display: block;
+		}
+
+		.progress-bar .progress-fill {
+			height: 100%;
+			background: #007bff;
+			width: 0%;
+			transition: width 0.3s;
+		}
+
+		.result-area {
+			background: #fff;
+			border: 1px solid #ced4da;
+			border-radius: 4px;
+			padding: 20px 22px 18px;
+			margin-top: 6px;
+			min-height: 100px;
+			max-height: 500px;
+			overflow-y: auto;
+		}
+
+		.result-area .error {
+			background: #fff8e1;
+			border: 1px solid #ffe082;
+			border-left: 3px solid #ffb300;
+			padding: 6px 12px;
+			margin: 4px 0;
+			border-radius: 4px;
+			font-size: 15px;
+			line-height: 1.6;
+		}
+
+		.result-area .error .word {
+			color: #d0314e;
+			font-weight: 600;
+		}
+
+		.result-area .error .suggestions {
+			color: #2b8c5e;
+			font-weight: 500;
+		}
+
+		.result-area .no-errors {
+			color: #22c55e;
+			padding: 12px;
+			font-weight: 500;
+		}
+
+		.result-area .loading {
+			color: #6c757d;
+			padding: 12px;
+		}
+
+		.toast {
+			position: fixed;
+			bottom: 30px;
+			left: 50%;
+			transform: translateX(-50%) translateY(100px);
+			background: #212529;
+			color: #fff;
+			padding: 10px 24px;
+			border-radius: 4px;
+			font-size: 14px;
+			opacity: 0;
+			transition: all 0.3s ease;
+			z-index: 2000;
+			pointer-events: none;
+		}
+
+		.toast.show {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0);
+		}
+
+		.loader {
+			display: none;
+			align-items: center;
+			gap: 12px;
+			padding: 8px 0;
+			font-size: 14px;
+			color: #6c757d;
+		}
+
+		.loader.active {
+			display: flex;
+		}
+
+		.loader .spinner {
+			width: 20px;
+			height: 20px;
+			border: 3px solid #e9ecef;
+			border-top-color: #007bff;
+			border-radius: 50%;
+			animation: spin 0.8s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* ===== МОДАЛЬНОЕ ОКНО ===== */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.35);
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.modal-overlay.active {
+			display: flex;
+		}
+
+		.modal {
+			background: #ffffff;
+			border-radius: 4px;
+			max-width: 480px;
+			width: 92%;
+			padding: 28px 28px 24px;
+			border: 1px solid #ced4da;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+			animation: modalFade 0.15s ease;
+		}
+
+		@keyframes modalFade {
+			from {
+				opacity: 0;
+				transform: scale(0.96);
+			}
+
+			to {
+				opacity: 1;
+				transform: scale(1);
+			}
+		}
+
+		.modal h2 {
+			font-weight: 500;
+			font-size: 22px;
+			color: #212529;
+			margin: 0 0 4px 0;
+		}
+
+		.modal p {
+			color: #6c757d;
+			margin: 0 0 18px 0;
+			font-size: 15px;
+		}
+
+		.modal .word-item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 6px 12px;
+			border-bottom: 1px solid #f1f3f5;
+			font-family: 'SFMono-Regular', 'Menlo', 'Cascadia Code', 'Consolas', monospace;
+			font-size: 14px;
+			line-height: 1.8;
+		}
+
+		.modal .word-item:last-child {
+			border-bottom: none;
+		}
+
+		.modal .word-item .word-text {
+			flex: 1;
+			color: #212529;
+		}
+
+		.modal .word-item .word-remove {
+			background: none;
+			border: none;
+			color: #dc3545;
+			cursor: pointer;
+			font-size: 18px;
+			padding: 0 4px;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.modal .word-item .word-remove:hover {
+			color: #a71d2a;
+		}
+
+		.modal .words-list {
+			background: #f8f9fa;
+			border: 1px solid #ced4da;
+			border-radius: 4px;
+			padding: 4px 0;
+			max-height: 300px;
+			overflow-y: auto;
+			margin: 12px 0 16px 0;
+			min-height: 40px;
+		}
+
+		.modal .words-list-empty {
+			padding: 16px;
+			color: #adb5bd;
+			font-style: italic;
+			text-align: center;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+		}
+
+		.modal .word-count {
+			font-size: 13px;
+			color: #6c757d;
+			margin-top: -4px;
+			margin-bottom: 8px;
+		}
+
+		.modal-actions {
+			display: flex;
+			justify-content: flex-end;
+			gap: 10px;
+			margin-top: 4px;
+		}
+
+		.modal-actions .btn {
+			padding: 6px 20px;
+			font-size: 14px;
+		}
+
+		.copy-feedback {
+			background-color: #2b8c5e;
+			color: white;
+			padding: 4px 12px;
+			border-radius: 4px;
+			font-size: 13px;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+			pointer-events: none;
+			white-space: nowrap;
+		}
+
+		.copy-feedback.show {
+			opacity: 1;
+		}
+
+		@media (max-width: 768px) {
+			body {
+				padding: 12px;
+			}
+
+			.action-bar {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.action-bar-left {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.btn {
+				width: 100%;
+				justify-content: center;
+			}
+
+			.stats-badge {
+				text-align: center;
+				white-space: normal;
+			}
+
+			.modal {
+				padding: 20px 16px 18px;
+			}
+
+			.modal .word-item {
+				font-size: 13px;
+				padding: 4px 8px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="app-card">
+		<h1>📝 Проверка орфографии</h1>
+		<p class="subtitle">Использует словарь именительного падежа + склонение</p>
+
+		<div class="input-section">
+			<textarea id="inputText"
+				placeholder="Введите текст для проверки…">Я хочу палучить права на вождение автомобиля. Это очень важно для меня.</textarea>
+		</div>
+
+		<div class="action-bar">
+			<div class="action-bar-left">
+				<button class="btn btn-primary" id="checkBtn">🔍 Проверить</button>
+				<button class="btn btn-outline-secondary" id="clearBtn"><img src="/img/clear.png" alt="">
+					Очистить</button>
+				<button class="btn btn-outline-secondary" id="prepareBtn" style="display: none;">📝 Подготовить для
+					словаря</button>
+			</div>
+			<span class="stats-badge" id="statsDisplay">Загрузка словаря...</span>
+		</div>
+
+		<div class="loader active" id="loader">
+			<div class="spinner"></div>
+			<span id="loaderText">Загрузка словаря...</span>
+		</div>
+
+		<div class="progress-bar" id="progressBar">
+			<div class="progress-fill" id="progressFill"></div>
+		</div>
+
+		<div class="result-area" id="resultArea">
+			<span style="color: #6c757d;">Словарь загружается...</span>
+		</div>
+	</div>
+
+	<div class="toast" id="toast">✅ Готово!</div>
+
+	<!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
+	<div class="modal-overlay" id="prepareModal">
+		<div class="modal">
+			<h2>📝 Подготовка для словаря</h2>
+			<p>Удалите лишние слова, затем скопируйте список в файл <code>/lib/ru_RU.dic</code></p>
+			<div class="word-count" id="wordCount">Всего слов: 0</div>
+			<div class="words-list" id="wordsList"></div>
+			<div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+				<span id="copyFeedback" class="copy-feedback">✅ Скопировано!</span>
+				<div class="modal-actions">
+					<button class="btn btn-outline-secondary btn-sm" id="modalCloseBtn">Закрыть</button>
+					<button class="btn btn-success btn-sm" id="copyWordsBtn">📋 Копировать</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		(function () {
+			'use strict';
+
+			// =============================================================
+			// ЭЛЕМЕНТЫ DOM
+			// =============================================================
+			const inputText = document.getElementById('inputText');
+			const resultArea = document.getElementById('resultArea');
+			const checkBtn = document.getElementById('checkBtn');
+			const clearBtn = document.getElementById('clearBtn');
+			const prepareBtn = document.getElementById('prepareBtn');
+			const statsDisplay = document.getElementById('statsDisplay');
+			const toast = document.getElementById('toast');
+			const loader = document.getElementById('loader');
+			const loaderText = document.getElementById('loaderText');
+			const progressBar = document.getElementById('progressBar');
+			const progressFill = document.getElementById('progressFill');
+
+			const modal = document.getElementById('prepareModal');
+			const modalCloseBtn = document.getElementById('modalCloseBtn');
+			const wordsList = document.getElementById('wordsList');
+			const wordCount = document.getElementById('wordCount');
+			const copyWordsBtn = document.getElementById('copyWordsBtn');
+			const copyFeedback = document.getElementById('copyFeedback');
+
+			let dictionary = null;
+			let isDictionaryLoaded = false;
+			let toastTimeout = null;
+			let copyTimeout = null;
+			let currentErrorWords = [];
+			let isProcessing = false;
+
+			const CACHE_KEY = 'spellcheck_dictionary';
+			const CACHE_VERSION = 'v1';
+
+			// =============================================================
+			// СЛОВАРЬ ИСКЛЮЧЕНИЙ ДЛЯ СКЛОНЕНИЯ (из вашего сервиса)
+			// =============================================================
+			// =============================================================
+			// СЛОВАРЬ ИСКЛЮЧЕНИЙ ДЛЯ СКЛОНЕНИЯ
+			// =============================================================
+			const declensionExceptions = {
+				// Мужской род
+				'стол': ['стол', 'стола', 'столу', 'стол', 'столом', 'столе', 'столы', 'столов', 'столам', 'столы', 'столами', 'столах'],
+				'дом': ['дом', 'дома', 'дому', 'дом', 'домом', 'доме', 'дома', 'домов', 'домам', 'дома', 'домами', 'домах'],
+				'город': ['город', 'города', 'городу', 'город', 'городом', 'городе', 'города', 'городов', 'городам', 'города', 'городами', 'городах'],
+				'музей': ['музей', 'музея', 'музею', 'музей', 'музеем', 'музее', 'музеи', 'музеев', 'музеям', 'музеи', 'музеями', 'музеях'],
+				'словарь': ['словарь', 'словаря', 'словарю', 'словарь', 'словарём', 'словаре', 'словари', 'словарей', 'словарям', 'словари', 'словарями', 'словарях'],
+				'конь': ['конь', 'коня', 'коню', 'коня', 'конём', 'коне', 'кони', 'коней', 'коням', 'коней', 'конями', 'конях'],
+				'день': ['день', 'дня', 'дню', 'день', 'днём', 'дне', 'дни', 'дней', 'дням', 'дни', 'днями', 'днях'],
+				'огонь': ['огонь', 'огня', 'огню', 'огонь', 'огнём', 'огне', 'огни', 'огней', 'огням', 'огни', 'огнями', 'огнях'],
+				'учитель': ['учитель', 'учителя', 'учителю', 'учителя', 'учителем', 'учителе', 'учителя', 'учителей', 'учителям', 'учителей', 'учителями', 'учителях'],
+				'писатель': ['писатель', 'писателя', 'писателю', 'писателя', 'писателем', 'писателе', 'писатели', 'писателей', 'писателям', 'писателей', 'писателями', 'писателях'],
+				'водитель': ['водитель', 'водителя', 'водителю', 'водителя', 'водителем', 'водителе', 'водители', 'водителей', 'водителям', 'водителей', 'водителями', 'водителях'],
+				'строитель': ['строитель', 'строителя', 'строителю', 'строителя', 'строителем', 'строителе', 'строители', 'строителей', 'строителям', 'строителей', 'строителями', 'строителях'],
+				'ребёнок': ['ребёнок', 'ребёнка', 'ребёнку', 'ребёнка', 'ребёнком', 'ребёнке', 'дети', 'детей', 'детям', 'детей', 'детьми', 'детях'],
+				'человек': ['человек', 'человека', 'человеку', 'человека', 'человеком', 'человеке', 'люди', 'людей', 'людям', 'людей', 'людьми', 'людях'],
+				'отец': ['отец', 'отца', 'отцу', 'отца', 'отцом', 'отце', 'отцы', 'отцов', 'отцам', 'отцов', 'отцами', 'отцах'],
+				'брат': ['брат', 'брата', 'брату', 'брата', 'братом', 'брате', 'братья', 'братьев', 'братьям', 'братьев', 'братьями', 'братьях'],
+				'друг': ['друг', 'друга', 'другу', 'друга', 'другом', 'друге', 'друзья', 'друзей', 'друзьям', 'друзей', 'друзьями', 'друзьях'],
+				'глаз': ['глаз', 'глаза', 'глазу', 'глаз', 'глазом', 'глазе', 'глаза', 'глаз', 'глазам', 'глаза', 'глазами', 'глазах'],
+				'лес': ['лес', 'леса', 'лесу', 'лес', 'лесом', 'лесе', 'леса', 'лесов', 'лесам', 'леса', 'лесами', 'лесах'],
+				'снег': ['снег', 'снега', 'снегу', 'снег', 'снегом', 'снеге', 'снега', 'снегов', 'снегам', 'снега', 'снегами', 'снегах'],
+
+				// Женский род на -а, -я
+				'собака': ['собака', 'собаки', 'собаке', 'собаку', 'собакой', 'собаке', 'собаки', 'собак', 'собакам', 'собак', 'собаками', 'собаках'],
+				'машина': ['машина', 'машины', 'машине', 'машину', 'машиной', 'машине', 'машины', 'машин', 'машинам', 'машины', 'машинами', 'машинах'],
+				'книга': ['книга', 'книги', 'книге', 'книгу', 'книгой', 'книге', 'книги', 'книг', 'книгам', 'книги', 'книгами', 'книгах'],
+				'рука': ['рука', 'руки', 'руке', 'руку', 'рукой', 'руке', 'руки', 'рук', 'рукам', 'руки', 'руками', 'руках'],
+				'нога': ['нога', 'ноги', 'ноге', 'ногу', 'ногой', 'ноге', 'ноги', 'ног', 'ногам', 'ноги', 'ногами', 'ногах'],
+				'голова': ['голова', 'головы', 'голове', 'голову', 'головой', 'голове', 'головы', 'голов', 'головам', 'головы', 'головами', 'головах'],
+				'семья': ['семья', 'семьи', 'семье', 'семью', 'семьёй', 'семье', 'семьи', 'семей', 'семьям', 'семьи', 'семьями', 'семьях'],
+				'статья': ['статья', 'статьи', 'статье', 'статью', 'статьёй', 'статье', 'статьи', 'статей', 'статьям', 'статьи', 'статьями', 'статьях'],
+				'песня': ['песня', 'песни', 'песне', 'песню', 'песней', 'песне', 'песни', 'песен', 'песням', 'песни', 'песнями', 'песнях'],
+				'кошка': ['кошка', 'кошки', 'кошке', 'кошку', 'кошкой', 'кошке', 'кошки', 'кошек', 'кошкам', 'кошек', 'кошками', 'кошках'],
+				'мышка': ['мышка', 'мышки', 'мышке', 'мышку', 'мышкой', 'мышке', 'мышки', 'мышек', 'мышкам', 'мышек', 'мышками', 'мышках'],
+				'ложка': ['ложка', 'ложки', 'ложке', 'ложку', 'ложкой', 'ложке', 'ложки', 'ложек', 'ложкам', 'ложки', 'ложками', 'ложках'],
+				'чашка': ['чашка', 'чашки', 'чашке', 'чашку', 'чашкой', 'чашке', 'чашки', 'чашек', 'чашкам', 'чашки', 'чашками', 'чашках'],
+
+				// Женский род на мягкий знак
+				'дверь': ['дверь', 'двери', 'двери', 'дверь', 'дверью', 'двери', 'двери', 'дверей', 'дверям', 'двери', 'дверями', 'дверях'],
+				'ночь': ['ночь', 'ночи', 'ночи', 'ночь', 'ночью', 'ночи', 'ночи', 'ночей', 'ночам', 'ночи', 'ночами', 'ночах'],
+				'мышь': ['мышь', 'мыши', 'мыши', 'мышь', 'мышью', 'мыши', 'мыши', 'мышей', 'мышам', 'мышей', 'мышами', 'мышах'],
+				'дочь': ['дочь', 'дочери', 'дочери', 'дочь', 'дочерью', 'дочери', 'дочери', 'дочерей', 'дочерям', 'дочерей', 'дочерями', 'дочерях'],
+				'мать': ['мать', 'матери', 'матери', 'мать', 'матерью', 'матери', 'матери', 'матерей', 'матерям', 'матерей', 'матерями', 'матерях'],
+
+				// Средний род
+				'окно': ['окно', 'окна', 'окну', 'окно', 'окном', 'окне', 'окна', 'окон', 'окнам', 'окна', 'окнами', 'окнах'],
+				'море': ['море', 'моря', 'морю', 'море', 'морем', 'море', 'моря', 'морей', 'морям', 'моря', 'морями', 'морях'],
+				'поле': ['поле', 'поля', 'полю', 'поле', 'полем', 'поле', 'поля', 'полей', 'полям', 'поля', 'полями', 'полях'],
+				'здание': ['здание', 'здания', 'зданию', 'здание', 'зданием', 'здании', 'здания', 'зданий', 'зданиям', 'здания', 'зданиями', 'зданиях'],
+				'солнце': ['солнце', 'солнца', 'солнцу', 'солнце', 'солнцем', 'солнце', 'солнца', 'солнц', 'солнцам', 'солнца', 'солнцами', 'солнцах'],
+				'сердце': ['сердце', 'сердца', 'сердцу', 'сердце', 'сердцем', 'сердце', 'сердца', 'сердец', 'сердцам', 'сердца', 'сердцами', 'сердцах'],
+				'время': ['время', 'времени', 'времени', 'время', 'временем', 'времени', 'времена', 'времён', 'временам', 'времена', 'временами', 'временах'],
+				'имя': ['имя', 'имени', 'имени', 'имя', 'именем', 'имени', 'имена', 'имён', 'именам', 'имена', 'именами', 'именах'],
+
+				// Прилагательные (для примера)
+				'чистый': ['чистый', 'чистого', 'чистому', 'чистый', 'чистым', 'чистом', 'чистые', 'чистых', 'чистым', 'чистые', 'чистыми', 'чистых'],
+				'синий': ['синий', 'синего', 'синему', 'синий', 'синим', 'синем', 'синие', 'синих', 'синим', 'синие', 'синими', 'синих'],
+				'большой': ['большой', 'большого', 'большому', 'большой', 'большим', 'большом', 'большие', 'больших', 'большим', 'большие', 'большими', 'больших'],
+				'хороший': ['хороший', 'хорошего', 'хорошему', 'хороший', 'хорошим', 'хорошем', 'хорошие', 'хороших', 'хорошим', 'хорошие', 'хорошими', 'хороших'],
+			};
+
+			// =============================================================
+			// ЭВРИСТИЧЕСКОЕ СКЛОНЕНИЕ (ЕД. Ч. + МН. Ч.)
+			// =============================================================
+			function declineByHeuristic(word) {
+				if (!word || word.trim() === '') return null;
+				const w = word.trim().toLowerCase();
+
+				if (declensionExceptions[w]) {
+					return declensionExceptions[w];
+				}
+
+				const forms = [];
+				const lastChar = w.slice(-1);
+				const secondLast = w.length > 1 ? w.slice(-2, -1) : '';
+
+				// --- ОПРЕДЕЛЯЕМ, ПРИЛАГАТЕЛЬНОЕ ЛИ ЭТО ---
+				let isAdjective = false;
+				const adjEndings = ['ый', 'ий', 'ой', 'ое', 'ая', 'яя', 'ые', 'ие', 'ее'];
+				for (const ending of adjEndings) {
+					if (w.endsWith(ending)) {
+						isAdjective = true;
+						break;
+					}
+				}
+
+				// --- ЕДИНСТВЕННОЕ ЧИСЛО (СУЩЕСТВИТЕЛЬНЫЕ) ---
+				let nominative = w;
+				let genitive = '';
+				let dative = '';
+				let accusative = '';
+				let instrumental = '';
+				let prepositional = '';
+
+				if (!isAdjective) {
+					// Существительные: родительный падеж
+					const gkhzhshch = ['г', 'к', 'х', 'ж', 'ш', 'ч', 'щ'];
+					if (lastChar === 'а' || lastChar === 'я') {
+						const beforeLast = w.slice(-2, -1);
+						if (gkhzhshch.includes(beforeLast)) {
+							genitive = w.slice(0, -1) + 'и';
+						} else {
+							genitive = w.slice(0, -1) + 'ы';
+						}
+						if (lastChar === 'я') genitive = w.slice(0, -1) + 'и';
+					} else if (lastChar === 'ь') {
+						if (secondLast === 'л' || secondLast === 'н' || secondLast === 'р' || secondLast === 'т') {
+							genitive = w.slice(0, -1) + 'я';
+						} else {
+							genitive = w.slice(0, -1) + 'и';
+						}
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						genitive = w.slice(0, -1) + 'а';
+						if (lastChar === 'е') genitive = w.slice(0, -1) + 'я';
+					} else if (lastChar === 'й') {
+						genitive = w.slice(0, -1) + 'я';
+					} else if (lastChar === 'и' || lastChar === 'ы') {
+						genitive = w;
+					} else {
+						genitive = w + 'а';
+					}
+
+					// Дательный падеж
+					if (lastChar === 'а' || lastChar === 'я') {
+						dative = w.slice(0, -1) + 'е';
+						if (lastChar === 'я') dative = w.slice(0, -1) + 'е';
+					} else if (lastChar === 'ь') {
+						dative = w.slice(0, -1) + 'ю';
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						dative = w.slice(0, -1) + 'у';
+						if (lastChar === 'е') dative = w.slice(0, -1) + 'ю';
+					} else if (lastChar === 'й') {
+						dative = w.slice(0, -1) + 'ю';
+					} else {
+						dative = w + 'у';
+					}
+
+					// Винительный падеж
+					if (lastChar === 'а' || lastChar === 'я') {
+						accusative = w.slice(0, -1) + 'у';
+						if (lastChar === 'я') accusative = w.slice(0, -1) + 'ю';
+					} else if (lastChar === 'ь') {
+						accusative = w;
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						accusative = w;
+					} else {
+						accusative = w;
+					}
+
+					// Творительный падеж
+					if (lastChar === 'а' || lastChar === 'я') {
+						instrumental = w.slice(0, -1) + 'ой';
+						if (lastChar === 'я') instrumental = w.slice(0, -1) + 'ей';
+					} else if (lastChar === 'ь') {
+						instrumental = w.slice(0, -1) + 'ем';
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						instrumental = w.slice(0, -1) + 'ом';
+						if (lastChar === 'е') instrumental = w.slice(0, -1) + 'ем';
+					} else if (lastChar === 'й') {
+						instrumental = w.slice(0, -1) + 'ем';
+					} else {
+						instrumental = w + 'ом';
+					}
+
+					// Предложный падеж
+					if (lastChar === 'а' || lastChar === 'я') {
+						prepositional = w.slice(0, -1) + 'е';
+						if (lastChar === 'я') prepositional = w.slice(0, -1) + 'е';
+					} else if (lastChar === 'ь') {
+						prepositional = w.slice(0, -1) + 'е';
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						prepositional = w.slice(0, -1) + 'е';
+						if (lastChar === 'е') prepositional = w.slice(0, -1) + 'е';
+					} else if (lastChar === 'й') {
+						prepositional = w.slice(0, -1) + 'е';
+					} else {
+						prepositional = w + 'е';
+					}
+				}
+
+				// --- ЕДИНСТВЕННОЕ ЧИСЛО (ПРИЛАГАТЕЛЬНЫЕ) ---
+				if (isAdjective) {
+					nominative = w;
+
+					if (w.endsWith('ый') || w.endsWith('ой')) {
+						genitive = w.slice(0, -2) + 'ого';
+						dative = w.slice(0, -2) + 'ому';
+						accusative = w.slice(0, -2) + 'ый';
+						instrumental = w.slice(0, -2) + 'ым';
+						prepositional = w.slice(0, -2) + 'ом';
+					} else if (w.endsWith('ий')) {
+						genitive = w.slice(0, -2) + 'его';
+						dative = w.slice(0, -2) + 'ему';
+						accusative = w.slice(0, -2) + 'ий';
+						instrumental = w.slice(0, -2) + 'им';
+						prepositional = w.slice(0, -2) + 'ем';
+					} else if (w.endsWith('ое')) {
+						genitive = w.slice(0, -2) + 'ого';
+						dative = w.slice(0, -2) + 'ому';
+						accusative = w.slice(0, -2) + 'ое';
+						instrumental = w.slice(0, -2) + 'ым';
+						prepositional = w.slice(0, -2) + 'ом';
+					} else if (w.endsWith('ая')) {
+						genitive = w.slice(0, -2) + 'ой';
+						dative = w.slice(0, -2) + 'ой';
+						accusative = w.slice(0, -2) + 'ую';
+						instrumental = w.slice(0, -2) + 'ой';
+						prepositional = w.slice(0, -2) + 'ой';
+					} else if (w.endsWith('яя')) {
+						genitive = w.slice(0, -2) + 'ей';
+						dative = w.slice(0, -2) + 'ей';
+						accusative = w.slice(0, -2) + 'юю';
+						instrumental = w.slice(0, -2) + 'ей';
+						prepositional = w.slice(0, -2) + 'ей';
+					} else if (w.endsWith('ее')) {
+						genitive = w.slice(0, -2) + 'его';
+						dative = w.slice(0, -2) + 'ему';
+						accusative = w.slice(0, -2) + 'ее';
+						instrumental = w.slice(0, -2) + 'им';
+						prepositional = w.slice(0, -2) + 'ем';
+					} else {
+						genitive = w + 'ого';
+						dative = w + 'ому';
+						accusative = w;
+						instrumental = w + 'ым';
+						prepositional = w + 'ом';
+					}
+				}
+
+				// --- МНОЖЕСТВЕННОЕ ЧИСЛО (СУЩЕСТВИТЕЛЬНЫЕ) ---
+				let pluralNominative = '';
+				let pluralGenitive = '';
+				let pluralDative = '';
+				let pluralAccusative = '';
+				let pluralInstrumental = '';
+				let pluralPrepositional = '';
+
+				if (!isAdjective) {
+					const gkhzhshch = ['г', 'к', 'х', 'ж', 'ш', 'ч', 'щ'];
+					if (lastChar === 'а' || lastChar === 'я') {
+						const stem = w.slice(0, -1);
+						pluralNominative = stem + 'ы';
+						if (gkhzhshch.includes(stem.slice(-1))) {
+							pluralNominative = stem + 'и';
+						}
+						pluralGenitive = stem + '';
+						pluralDative = stem + 'ам';
+						pluralAccusative = stem + 'ы';
+						if (gkhzhshch.includes(stem.slice(-1))) {
+							pluralAccusative = stem + 'и';
+						}
+						pluralInstrumental = stem + 'ами';
+						pluralPrepositional = stem + 'ах';
+					} else if (lastChar === 'ь') {
+						const stem = w.slice(0, -1);
+						pluralNominative = stem + 'и';
+						pluralGenitive = stem + 'ей';
+						pluralDative = stem + 'ям';
+						pluralAccusative = stem + 'и';
+						pluralInstrumental = stem + 'ями';
+						pluralPrepositional = stem + 'ях';
+					} else if (lastChar === 'о' || lastChar === 'е') {
+						const stem = w.slice(0, -1);
+						pluralNominative = stem + 'а';
+						if (lastChar === 'е') pluralNominative = stem + 'я';
+						pluralGenitive = stem + '';
+						pluralDative = stem + 'ам';
+						pluralAccusative = stem + 'а';
+						if (lastChar === 'е') pluralAccusative = stem + 'я';
+						pluralInstrumental = stem + 'ами';
+						pluralPrepositional = stem + 'ах';
+					} else if (lastChar === 'й') {
+						const stem = w.slice(0, -1);
+						pluralNominative = stem + 'и';
+						pluralGenitive = stem + 'ев';
+						pluralDative = stem + 'ям';
+						pluralAccusative = stem + 'и';
+						pluralInstrumental = stem + 'ями';
+						pluralPrepositional = stem + 'ях';
+					} else {
+						pluralNominative = w + 'ы';
+						if (gkhzhshch.includes(w.slice(-1))) {
+							pluralNominative = w + 'и';
+						}
+						pluralGenitive = w + 'ов';
+						if (w === 'солдат' || w === 'сапог' || w === 'глаз') {
+							pluralGenitive = w + '';
+						}
+						pluralDative = w + 'ам';
+						pluralAccusative = w + 'ы';
+						if (gkhzhshch.includes(w.slice(-1))) {
+							pluralAccusative = w + 'и';
+						}
+						pluralInstrumental = w + 'ами';
+						pluralPrepositional = w + 'ах';
+					}
+				}
+
+				// --- МНОЖЕСТВЕННОЕ ЧИСЛО (ПРИЛАГАТЕЛЬНЫЕ) ---
+				if (isAdjective) {
+					if (w.endsWith('ый') || w.endsWith('ой')) {
+						pluralNominative = w.slice(0, -2) + 'ые';
+						pluralGenitive = w.slice(0, -2) + 'ых';
+						pluralDative = w.slice(0, -2) + 'ым';
+						pluralAccusative = w.slice(0, -2) + 'ые';
+						pluralInstrumental = w.slice(0, -2) + 'ыми';
+						pluralPrepositional = w.slice(0, -2) + 'ых';
+					} else if (w.endsWith('ий')) {
+						pluralNominative = w.slice(0, -2) + 'ие';
+						pluralGenitive = w.slice(0, -2) + 'их';
+						pluralDative = w.slice(0, -2) + 'им';
+						pluralAccusative = w.slice(0, -2) + 'ие';
+						pluralInstrumental = w.slice(0, -2) + 'ими';
+						pluralPrepositional = w.slice(0, -2) + 'их';
+					} else if (w.endsWith('ое')) {
+						pluralNominative = w.slice(0, -2) + 'ые';
+						pluralGenitive = w.slice(0, -2) + 'ых';
+						pluralDative = w.slice(0, -2) + 'ым';
+						pluralAccusative = w.slice(0, -2) + 'ые';
+						pluralInstrumental = w.slice(0, -2) + 'ыми';
+						pluralPrepositional = w.slice(0, -2) + 'ых';
+					} else if (w.endsWith('ая')) {
+						pluralNominative = w.slice(0, -2) + 'ые';
+						pluralGenitive = w.slice(0, -2) + 'ых';
+						pluralDative = w.slice(0, -2) + 'ым';
+						pluralAccusative = w.slice(0, -2) + 'ые';
+						pluralInstrumental = w.slice(0, -2) + 'ыми';
+						pluralPrepositional = w.slice(0, -2) + 'ых';
+					} else if (w.endsWith('яя')) {
+						pluralNominative = w.slice(0, -2) + 'ие';
+						pluralGenitive = w.slice(0, -2) + 'их';
+						pluralDative = w.slice(0, -2) + 'им';
+						pluralAccusative = w.slice(0, -2) + 'ие';
+						pluralInstrumental = w.slice(0, -2) + 'ими';
+						pluralPrepositional = w.slice(0, -2) + 'их';
+					} else if (w.endsWith('ее')) {
+						pluralNominative = w.slice(0, -2) + 'ие';
+						pluralGenitive = w.slice(0, -2) + 'их';
+						pluralDative = w.slice(0, -2) + 'им';
+						pluralAccusative = w.slice(0, -2) + 'ие';
+						pluralInstrumental = w.slice(0, -2) + 'ими';
+						pluralPrepositional = w.slice(0, -2) + 'их';
+					} else {
+						pluralNominative = w + 'е';
+						pluralGenitive = w + 'ых';
+						pluralDative = w + 'ым';
+						pluralAccusative = w + 'е';
+						pluralInstrumental = w + 'ыми';
+						pluralPrepositional = w + 'ых';
+					}
+				}
+
+				return [
+					nominative, genitive, dative, accusative, instrumental, prepositional,
+					pluralNominative, pluralGenitive, pluralDative, pluralAccusative, pluralInstrumental, pluralPrepositional
+				];
+			}
+
+			// =============================================================
+			// ПРОВЕРКА СЛОВА ВО ВСЕХ ФОРМАХ (ЕД. + МН. ЧИСЛО)
+			// =============================================================
+			function checkWordInAllForms(word, dictionary) {
+				if (!word || word.length < 2) return false;
+
+				const lowerWord = word.toLowerCase();
+
+				// 1. Проверяем точное совпадение
+				if (dictionary.has(lowerWord)) return true;
+
+				// 2. Специальная проверка для слов на -ение, -ание, -оние
+				const specialEndings = ['ение', 'ание', 'оние', 'уние', 'ыние', 'иние'];
+				for (const ending of specialEndings) {
+					if (lowerWord.endsWith(ending)) {
+						if (dictionary.has(lowerWord)) return true;
+						const genitive = lowerWord.slice(0, -1) + 'я';
+						if (dictionary.has(genitive)) return true;
+						const dative = lowerWord.slice(0, -1) + 'ю';
+						if (dictionary.has(dative)) return true;
+						const instrumental = lowerWord.slice(0, -1) + 'ем';
+						if (dictionary.has(instrumental)) return true;
+						const prepositional = lowerWord.slice(0, -1) + 'и';
+						if (dictionary.has(prepositional)) return true;
+
+						// Множественное число
+						const pluralNominative = lowerWord.slice(0, -2) + 'ия';
+						if (dictionary.has(pluralNominative)) return true;
+						const pluralGenitive = lowerWord.slice(0, -2) + 'ий';
+						if (dictionary.has(pluralGenitive)) return true;
+						const pluralDative = lowerWord.slice(0, -2) + 'иям';
+						if (dictionary.has(pluralDative)) return true;
+						const pluralInstrumental = lowerWord.slice(0, -2) + 'иями';
+						if (dictionary.has(pluralInstrumental)) return true;
+						const pluralPrepositional = lowerWord.slice(0, -2) + 'иях';
+						if (dictionary.has(pluralPrepositional)) return true;
+					}
+				}
+
+				// 3. Проверка через эвристическое склонение
+				const prefix = lowerWord.slice(0, 4);
+				let count = 0;
+
+				for (const dictWord of dictionary) {
+					if (count > 5000) break;
+					count++;
+
+					if (dictWord.startsWith(prefix) || dictWord.startsWith(prefix.slice(0, 3))) {
+						if (dictWord.length < 3) continue;
+
+						const allForms = declineByHeuristic(dictWord);
+						if (allForms && allForms.includes(lowerWord)) {
+							return true;
+						}
+					}
+				}
+
+				// 4. Проверка для прилагательных во множественном числе
+				const adjPluralEndings = ['ые', 'ие', 'ых', 'им', 'ими'];
+				for (const ending of adjPluralEndings) {
+					if (lowerWord.endsWith(ending)) {
+						const base = lowerWord.slice(0, -ending.length);
+						const possibleForms = [
+							base + 'ый', base + 'ой', base + 'ий',
+							base + 'ая', base + 'яя', base + 'ое', base + 'ее'
+						];
+						for (const form of possibleForms) {
+							if (dictionary.has(form)) return true;
+						}
+					}
+				}
+
+				// 5. Проверка для кратких прилагательных
+				if (lowerWord.endsWith('ив') || lowerWord.endsWith('ов') || lowerWord.endsWith('ев')) {
+					const fullForm = lowerWord + 'ый';
+					if (dictionary.has(fullForm)) return true;
+				}
+				if (lowerWord.endsWith('ш')) {
+					const fullForm = lowerWord + 'ий';
+					if (dictionary.has(fullForm)) return true;
+				}
+				if (lowerWord.endsWith('н')) {
+					const fullForm = lowerWord + 'ый';
+					if (dictionary.has(fullForm)) return true;
+				}
+
+				// 6. Проверка через удаление падежных окончаний
+				const endings = ['а', 'я', 'у', 'ю', 'ом', 'ем', 'ой', 'ей', 'е', 'ы', 'и', 'ов', 'ев', 'ам', 'ям', 'ами', 'ями', 'ах', 'ях'];
+				for (const ending of endings) {
+					if (lowerWord.endsWith(ending)) {
+						const baseForm = lowerWord.slice(0, -ending.length);
+						if (dictionary.has(baseForm)) return true;
+						if (baseForm.endsWith('н')) {
+							const altForm = baseForm + 'ие';
+							if (dictionary.has(altForm)) return true;
+						}
+						if (baseForm.endsWith('л')) {
+							const altForm = baseForm + 'ло';
+							if (dictionary.has(altForm)) return true;
+						}
+						if (baseForm.endsWith('т')) {
+							const altForm = baseForm + 'то';
+							if (dictionary.has(altForm)) return true;
+						}
+						if (baseForm.endsWith('к')) {
+							const altForm = baseForm + 'ка';
+							if (dictionary.has(altForm)) return true;
+						}
+					}
+				}
+
+				// 7. Проверка для слов с чередованием
+				const alternations = [
+					{ from: 'г', to: 'ж' },
+					{ from: 'к', to: 'ч' },
+					{ from: 'х', to: 'ш' },
+				];
+				for (const alt of alternations) {
+					if (lowerWord.includes(alt.to)) {
+						const possibleBase = lowerWord.replace(new RegExp(alt.to, 'g'), alt.from);
+						if (dictionary.has(possibleBase)) return true;
+					}
+					if (lowerWord.includes(alt.from)) {
+						const possibleBase = lowerWord.replace(new RegExp(alt.from, 'g'), alt.to);
+						if (dictionary.has(possibleBase)) return true;
+					}
+				}
+
+				// 8. Проверка для деепричастий
+				const participleEndings = ['я', 'в', 'вши', 'вшись'];
+				for (const ending of participleEndings) {
+					if (lowerWord.endsWith(ending)) {
+						const base = lowerWord.slice(0, -ending.length);
+						const verbForms = [base + 'ть', base + 'ать', base + 'ять', base + 'еть', base + 'ить'];
+						for (const form of verbForms) {
+							if (dictionary.has(form)) return true;
+						}
+					}
+				}
+
+				// 9. Проверка для слов, оканчивающихся на -ия, -ья, -ие, -ье
+				const lemmaPatterns = [
+					{ suffix: 'ия', lemmas: ['ия', 'ья'] },
+					{ suffix: 'ья', lemmas: ['ия', 'ья'] },
+					{ suffix: 'ие', lemmas: ['ие', 'ье'] },
+					{ suffix: 'ье', lemmas: ['ие', 'ье'] },
+					{ suffix: 'ий', lemmas: ['ий', 'ый'] },
+					{ suffix: 'ый', lemmas: ['ий', 'ый'] },
+				];
+				for (const pattern of lemmaPatterns) {
+					if (lowerWord.endsWith(pattern.suffix)) {
+						const base = lowerWord.slice(0, -pattern.suffix.length);
+						for (const lemmaSuffix of pattern.lemmas) {
+							const lemma = base + lemmaSuffix;
+							if (dictionary.has(lemma)) return true;
+						}
+					}
+				}
+
+				return false;
+			}
+
+
+
+			// =============================================================
+			// TOAST
+			// =============================================================
+			function showToast(message) {
+				toast.textContent = message;
+				toast.classList.add('show');
+				clearTimeout(toastTimeout);
+				toastTimeout = setTimeout(() => {
+					toast.classList.remove('show');
+				}, 2000);
+			}
+
+			// =============================================================
+			// ПАРСИНГ СЛОВАРЯ
+			// =============================================================
+			function parseDictionary(text) {
+				return text.split('\n')
+					.map(line => {
+						let word = line.trim().toLowerCase();
+						if (word.includes('#')) {
+							word = word.substring(0, word.indexOf('#')).trim();
+						}
+						if (word.includes('/')) {
+							word = word.substring(0, word.indexOf('/')).trim();
+						}
+						return word;
+					})
+					.filter(word => word && word.length > 1);
+			}
+
+			// =============================================================
+			// ЗАГРУЗКА СЛОВАРЯ
+			// =============================================================
+			async function loadDictionary() {
+				try {
+					const cached = localStorage.getItem(CACHE_KEY);
+					if (cached) {
+						const data = JSON.parse(cached);
+						if (data && data.version === CACHE_VERSION && data.words && data.words.length > 1000) {
+							dictionary = new Set(data.words);
+							isDictionaryLoaded = true;
+
+							loader.classList.remove('active');
+							statsDisplay.textContent = `✅ Словарь загружен из кеша (${dictionary.size} слов)`;
+							resultArea.innerHTML = '<span style="color: #6c757d;">Словарь загружен. Введите текст и нажмите «Проверить».</span>';
+							prepareBtn.style.display = 'none';
+
+							console.log(`✅ Словарь загружен из localStorage (${dictionary.size} слов)`);
+							return;
+						}
+					}
+				} catch (e) {
+					console.warn('Кеш словаря недоступен:', e);
+				}
+
+				try {
+					loaderText.textContent = 'Загрузка словаря...';
+					const response = await fetch('/lib/ru_RU.dic');
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status} — файл не найден`);
+					}
+
+					const text = await response.text();
+					const words = parseDictionary(text);
+
+					if (words.length < 1000) {
+						throw new Error('Словарь слишком маленький или повреждён');
+					}
+
+					dictionary = new Set(words);
+					isDictionaryLoaded = true;
+
+					try {
+						const data = {
+							version: CACHE_VERSION,
+							words: words,
+							timestamp: Date.now()
+						};
+						localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+						console.log(`💾 Словарь сохранён в localStorage (${words.length} слов)`);
+					} catch (e) {
+						console.warn('Не удалось сохранить словарь в localStorage:', e);
+					}
+
+					loader.classList.remove('active');
+					statsDisplay.textContent = `✅ Словарь загружен (${dictionary.size} слов)`;
+					resultArea.innerHTML = '<span style="color: #6c757d;">Словарь загружен. Введите текст и нажмите «Проверить».</span>';
+					prepareBtn.style.display = 'none';
+
+					console.log(`✅ Загружено ${dictionary.size} слов`);
+
+				} catch (error) {
+					console.error('❌ Ошибка загрузки словаря:', error);
+					loader.classList.remove('active');
+					statsDisplay.textContent = '❌ Ошибка загрузки словаря';
+					resultArea.innerHTML = `
+                        <span style="color: #dc3545;">
+                            ❌ Не удалось загрузить словарь.
+                            <br><small>${error.message}</small>
+                            <br><br>
+                            <strong>Решение:</strong> Поместите файл <code>ru_RU.dic</code> в папку <code>/lib/</code>
+                        </span>
+                    `;
+					prepareBtn.style.display = 'none';
+				}
+			}
+
+			// =============================================================
+			// ПОИСК ПРЕДЛОЖЕНИЙ
+			// =============================================================
+			function findSuggestions(word, maxSuggestions = 3) {
+				if (!dictionary) return [];
+
+				const suggestions = [];
+				for (const dictWord of dictionary) {
+					if (suggestions.length >= maxSuggestions) break;
+					if (dictWord.length < 2) continue;
+					if (Math.abs(dictWord.length - word.length) > 3) continue;
+
+					const distance = levenshteinDistance(word, dictWord);
+					if (distance <= 2) {
+						suggestions.push(dictWord);
+					}
+				}
+				return suggestions;
+			}
+
+			// =============================================================
+			// РАССТОЯНИЕ ЛЕВЕНШТЕЙНА
+			// =============================================================
+			function levenshteinDistance(a, b) {
+				const matrix = [];
+				for (let i = 0; i <= b.length; i++) {
+					matrix[i] = [i];
+				}
+				for (let j = 0; j <= a.length; j++) {
+					matrix[0][j] = j;
+				}
+				for (let i = 1; i <= b.length; i++) {
+					for (let j = 1; j <= a.length; j++) {
+						if (b[i - 1] === a[j - 1]) {
+							matrix[i][j] = matrix[i - 1][j - 1];
+						} else {
+							matrix[i][j] = Math.min(
+								matrix[i - 1][j - 1] + 1,
+								matrix[i][j - 1] + 1,
+								matrix[i - 1][j] + 1
+							);
+						}
+					}
+				}
+				return matrix[b.length][a.length];
+			}
+
+			// =============================================================
+			// ПРОВЕРКА ТЕКСТА (С ИСПОЛЬЗОВАНИЕМ СКЛОНЕНИЯ)
+			// =============================================================
+			function checkText(text) {
+				if (!dictionary) {
+					return { errors: [], stats: 'Словарь не загружен' };
+				}
+
+				const words = text.match(/[а-яА-ЯёЁ]+(?:-[а-яА-ЯёЁ]+)?/g) || [];
+				const errors = [];
+				const checked = new Set();
+
+				for (const word of words) {
+					const lowerWord = word.toLowerCase();
+					if (checked.has(lowerWord) || lowerWord.length < 2) continue;
+					checked.add(lowerWord);
+
+					// Проверяем слово с учётом склонений
+					if (!checkWordInAllForms(lowerWord, dictionary)) {
+						const suggestions = findSuggestions(lowerWord);
+						errors.push({
+							word: word,
+							lowerWord: lowerWord,
+							suggestions: suggestions.length > 0 ? suggestions : ['(нет предложений)']
+						});
+					}
+				}
+
+				return {
+					errors,
+					stats: `Найдено ${errors.length} ошибок (всего слов: ${checked.size})`
+				};
+			}
+
+			// =============================================================
+			// ОТОБРАЖЕНИЕ РЕЗУЛЬТАТА
+			// =============================================================
+			function displayResult(text) {
+				if (!isDictionaryLoaded || !dictionary) {
+					resultArea.innerHTML = '<span style="color: #6c757d;">Словарь ещё не загружен...</span>';
+					prepareBtn.style.display = 'none';
+					return;
+				}
+
+				const trimmed = text.trim();
+				if (!trimmed) {
+					resultArea.innerHTML = '<span style="color: #6c757d;">Введите текст для проверки</span>';
+					statsDisplay.textContent = 'Нет текста';
+					prepareBtn.style.display = 'none';
+					currentErrorWords = [];
+					return;
+				}
+
+				progressBar.classList.add('active');
+				progressFill.style.width = '0%';
+				resultArea.innerHTML = '<span class="loading">⏳ Выполняется проверка...</span>';
+				statsDisplay.textContent = '⏳ Проверка...';
+
+				let progress = 0;
+				const progressInterval = setInterval(() => {
+					progress += Math.random() * 15;
+					if (progress > 90) progress = 90;
+					progressFill.style.width = progress + '%';
+				}, 150);
+
+				setTimeout(() => {
+					try {
+						const { errors, stats } = checkText(trimmed);
+
+						clearInterval(progressInterval);
+						progressFill.style.width = '100%';
+
+						statsDisplay.textContent = stats;
+
+						const uniqueWords = new Set();
+						errors.forEach(error => {
+							uniqueWords.add(error.lowerWord);
+						});
+						currentErrorWords = Array.from(uniqueWords).sort();
+
+						if (errors.length === 0) {
+							resultArea.innerHTML = `<div class="no-errors">✅ Ошибок не найдено!</div>`;
+							prepareBtn.style.display = 'none';
+						} else {
+							prepareBtn.style.display = 'inline-flex';
+							let html = '';
+							errors.forEach(error => {
+								const suggestionsText = error.suggestions.join(', ');
+								html += `
+                                    <div class="error">
+                                        <span class="word">«${error.word}»</span> → 
+                                        <span class="suggestions">${suggestionsText}</span>
+                                    </div>
+                                `;
+							});
+							resultArea.innerHTML = html;
+						}
+
+						setTimeout(() => {
+							progressBar.classList.remove('active');
+							progressFill.style.width = '0%';
+						}, 500);
+
+					} catch (error) {
+						clearInterval(progressInterval);
+						progressBar.classList.remove('active');
+						progressFill.style.width = '0%';
+						console.error('Ошибка проверки:', error);
+						resultArea.innerHTML = `<span style="color: #dc3545;">❌ Ошибка: ${error.message}</span>`;
+						statsDisplay.textContent = '❌ Ошибка проверки';
+					}
+				}, 300);
+			}
+
+			// =============================================================
+			// ПОДГОТОВКА СЛОВ ДЛЯ СЛОВАРЯ
+			// =============================================================
+			function prepareWordsForDictionary() {
+				if (currentErrorWords.length === 0) {
+					showToast('ℹ️ Нет новых слов для добавления');
+					return;
+				}
+
+				renderWordList(currentErrorWords);
+				modal.classList.add('active');
+				copyFeedback.classList.remove('show');
+			}
+
+			// =============================================================
+			// РЕНДЕРИНГ СПИСКА СЛОВ
+			// =============================================================
+			function renderWordList(words) {
+				if (words.length === 0) {
+					wordsList.innerHTML = `<div class="words-list-empty">Нет слов для добавления</div>`;
+					wordCount.textContent = 'Всего слов: 0';
+					return;
+				}
+
+				let html = '';
+				words.forEach((word, index) => {
+					html += `
+                        <div class="word-item" data-index="${index}">
+                            <span class="word-text">${word}</span>
+                            <button class="word-remove" data-word="${word}" title="Удалить слово">✕</button>
+                        </div>
+                    `;
+				});
+				wordsList.innerHTML = html;
+				wordCount.textContent = `Всего слов: ${words.length}`;
+
+				wordsList.querySelectorAll('.word-remove').forEach(btn => {
+					btn.addEventListener('click', function () {
+						const word = this.dataset.word;
+						removeWordFromList(word);
+					});
+				});
+			}
+
+			// =============================================================
+			// УДАЛЕНИЕ СЛОВА ИЗ СПИСКА
+			// =============================================================
+			function removeWordFromList(word) {
+				const index = currentErrorWords.indexOf(word);
+				if (index !== -1) {
+					currentErrorWords.splice(index, 1);
+					renderWordList(currentErrorWords);
+					showToast(`🗑️ Слово «${word}» удалено`);
+
+					if (currentErrorWords.length === 0) {
+						setTimeout(() => {
+							if (currentErrorWords.length === 0) {
+								modal.classList.remove('active');
+								showToast('ℹ️ Все слова удалены');
+							}
+						}, 500);
+					}
+				}
+			}
+
+			// =============================================================
+			// КОПИРОВАНИЕ СЛОВ
+			// =============================================================
+			function copyWords() {
+				if (currentErrorWords.length === 0) {
+					showToast('⚠️ Нет слов для копирования');
+					return;
+				}
+
+				const text = currentErrorWords.join('\n');
+
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(text)
+						.then(() => {
+							showCopyFeedback();
+						})
+						.catch(() => {
+							fallbackCopy(text);
+						});
+				} else {
+					fallbackCopy(text);
+				}
+			}
+
+			function fallbackCopy(text) {
+				const textarea = document.createElement('textarea');
+				textarea.value = text;
+				textarea.style.position = 'fixed';
+				textarea.style.opacity = '0';
+				textarea.style.left = '-9999px';
+				document.body.appendChild(textarea);
+				textarea.select();
+				try {
+					document.execCommand('copy');
+					showCopyFeedback();
+				} catch (err) {
+					showToast('❌ Ошибка копирования');
+				}
+				document.body.removeChild(textarea);
+			}
+
+			function showCopyFeedback() {
+				copyFeedback.classList.add('show');
+				clearTimeout(copyTimeout);
+				copyTimeout = setTimeout(() => {
+					copyFeedback.classList.remove('show');
+				}, 2000);
+			}
+
+			// =============================================================
+			// ОБРАБОТЧИКИ
+			// =============================================================
+			function performCheck() {
+				if (isProcessing) return;
+
+				const text = inputText.value;
+				if (!isDictionaryLoaded) {
+					showToast('⏳ Словарь ещё загружается...');
+					return;
+				}
+
+				if (!text.trim()) {
+					resultArea.innerHTML = '<span style="color: #6c757d;">Введите текст для проверки</span>';
+					statsDisplay.textContent = 'Нет текста';
+					prepareBtn.style.display = 'none';
+					showToast('⚠️ Введите текст для проверки');
+					return;
+				}
+
+				isProcessing = true;
+				checkBtn.disabled = true;
+				checkBtn.textContent = '⏳ Проверка...';
+
+				displayResult(text);
+
+				setTimeout(() => {
+					isProcessing = false;
+					checkBtn.disabled = false;
+					checkBtn.textContent = '🔍 Проверить';
+				}, 500);
+			}
+
+			function clearAll() {
+				inputText.value = '';
+				inputText.focus(); 
+				resultArea.innerHTML = '<span style="color: #6c757d;">Введите текст и нажмите «Проверить»</span>';
+				statsDisplay.textContent = 'Ожидание текста';
+				prepareBtn.style.display = 'none';
+				currentErrorWords = [];
+				progressBar.classList.remove('active');
+				progressFill.style.width = '0%';
+				showToast('🧹 Очищено');
+			}
+
+			function closeModal() {
+				modal.classList.remove('active');
+				copyFeedback.classList.remove('show');
+			}
+
+			// =============================================================
+			// СОБЫТИЯ
+			// =============================================================
+			checkBtn.addEventListener('click', performCheck);
+			clearBtn.addEventListener('click', clearAll);
+			prepareBtn.addEventListener('click', prepareWordsForDictionary);
+			modalCloseBtn.addEventListener('click', closeModal);
+			copyWordsBtn.addEventListener('click', copyWords);
+
+			modal.addEventListener('click', (e) => {
+				if (e.target === modal) closeModal();
+			});
+
+			inputText.addEventListener('keydown', (e) => {
+				if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+					e.preventDefault();
+					performCheck();
+				}
+			});
+
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape' && modal.classList.contains('active')) {
+					closeModal();
+				}
+			});
+
+			// =============================================================
+			// ЗАПУСК
+			// =============================================================
+			loadDictionary();
+
+			console.log('📚 Проверка орфографии готова');
+			console.log('   - Словарь: /lib/ru_RU.dic (именительный падеж)');
+			console.log('   - Склонение: эвристическое + исключения');
+			console.log('   - Кеш: localStorage (ключ: ' + CACHE_KEY + ')');
+
+		})();
+	</script>
+</body>
+
+</html>

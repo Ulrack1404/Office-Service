@@ -1,0 +1,696 @@
+<!-- Office-Service/Tesseract OCR-online/index.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распознавание текста с изображений</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 0;
+            color: #212529;
+        }
+
+        .app-card {
+            max-width: 100%;
+            width: 100%;
+            background: white;
+            padding: 0;
+        }
+
+        h1 {
+            font-weight: 500;
+            font-size: 28px;
+            color: #212529;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        .lead {
+            font-size: 16px;
+            color: #6c757d;
+            margin-bottom: 24px;
+            padding: 0 4px;
+        }
+
+        /* ===== DRAG & DROP ЗОНА ===== */
+        .drop-zone {
+            border: 2px dashed #ced4da;
+            border-radius: 4px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.2s;
+            cursor: pointer;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone:hover {
+            border-color: #80bdff;
+            background: #e9ecef;
+        }
+
+        .drop-zone.drag-over {
+            border-color: #007bff;
+            background: #cfe2ff;
+            box-shadow: inset 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        .drop-zone.drag-over .drop-zone-icon {
+            transform: scale(1.1);
+        }
+
+        .drop-zone-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .drop-zone-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #212529;
+        }
+
+        .drop-zone-text strong {
+            color: #007bff;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .drop-zone-hint {
+            font-size: 13px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        /* ===== КАРТОЧКА ===== */
+        .card {
+            background: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 20px 22px 18px;
+            margin-bottom: 24px;
+        }
+
+        /* ===== ПРЕВЬЮ ===== */
+        .img-fluid {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            display: none;
+            margin-top: 16px;
+        }
+
+        /* ===== СТАТУС ===== */
+        .text-muted {
+            color: #6c757d;
+            margin-top: 12px;
+            font-size: 14px;
+            min-height: 1.8rem;
+        }
+
+        /* ===== РЕЗУЛЬТАТ ===== */
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .result-label {
+            font-weight: 500;
+            color: #495057;
+            font-size: 15px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .copy-feedback {
+            background-color: #2b8c5e;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .copy-feedback.show {
+            opacity: 1;
+        }
+
+        .alert {
+            position: relative;
+            padding: 16px 20px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            color: #212529;
+            white-space: pre-wrap;
+            word-break: break-word;
+            display: none;
+            font-size: 15px;
+            min-height: 60px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        /* ===== ИНФОРМАЦИЯ О ФАЙЛЕ ===== */
+        .file-info {
+            display: none;
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #495057;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-info .file-name {
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-info .file-size {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .file-info .file-remove {
+            cursor: pointer;
+            color: #d0314e;
+            font-weight: bold;
+            padding: 0 8px;
+            transition: color 0.2s;
+        }
+
+        .file-info .file-remove:hover {
+            color: #a71d2a;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-weight: 400;
+            text-align: center;
+            vertical-align: middle;
+            cursor: pointer;
+            padding: 8px 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn img {
+            display: inline-block;
+            height: 18px;
+            width: 18px;
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+
+        .btn-success {
+            color: #fff;
+            background-color: #2b8c5e;
+            border-color: #2b8c5e;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background-color: #1e6b47;
+            border-color: #1a5f3f;
+        }
+
+        .btn-outline-secondary {
+            color: #212529;
+            background-color: transparent;
+            border-color: #ced4da;
+        }
+
+        .btn-outline-secondary:hover:not(:disabled) {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 14px;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #212529;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== ACTION BAR ===== */
+        .action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 16px 20px;
+            margin-bottom: 16px;
+        }
+
+        .action-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .drop-zone {
+                padding: 30px 16px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .result-actions {
+                justify-content: flex-start;
+            }
+
+            .action-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-bar-left {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-card">
+        <h1>Распознавание текста с изображений</h1> 
+        <p class="lead">Перетащите файл или нажмите для выбора</p>
+
+        <!-- Карточка с загрузкой -->
+        <div class="card">
+            <div class="drop-zone" id="dropZone">
+                <span class="drop-zone-icon">📁</span>
+                <div class="drop-zone-text">
+                    <strong>Нажмите</strong> для выбора файла или <strong>перетащите</strong> изображение сюда
+                </div>
+                <div class="drop-zone-hint">Поддерживаются: JPG, PNG, BMP, WEBP</div>
+                <input type="file" id="imageInput" accept="image/*">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <span class="file-name" id="fileName">image.jpg</span>
+                <span class="file-size" id="fileSize">2.4 МБ</span>
+                <span class="file-remove" id="fileRemove" title="Удалить файл">✕</span>
+            </div>
+
+            <img id="imagePreview" class="img-fluid" alt="Предпросмотр">
+
+            <div id="progress" class="text-muted">Ожидание загрузки...</div>
+        </div>
+
+        <!-- Карточка с результатом -->
+        <div class="card">
+            <!-- Action Bar с кнопкой Очистить -->
+            <div class="action-bar">
+                <div class="action-bar-left">
+                    <button class="btn btn-outline-secondary" id="clearBtn_ocr"><img src="/img/clear.png" alt=""> Очистить</button>
+                </div>
+            </div>
+
+            <div class="result-header" id="resultHeader" style="display: none;">
+                <span class="result-label">📝 Распознанный текст:</span>
+                <div class="result-actions">
+                    <span id="copyFeedback" class="copy-feedback">✅ Скопировано!</span>
+                    <button id="copyBtn_ocr" class="btn btn-success btn-sm"><img src="/img/copy.png" alt="">
+                        Копировать</button>
+                </div>
+            </div>
+            <div id="result" class="alert">
+                Результат появится здесь
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div class="toast" id="toast">✅ Скопировано!</div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            // Элементы
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('imageInput');
+            const preview = document.getElementById('imagePreview');
+            const progressDiv = document.getElementById('progress');
+            const resultDiv = document.getElementById('result');
+            const resultHeader = document.getElementById('resultHeader');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const fileRemove = document.getElementById('fileRemove');
+            const copyBtn_ocr = document.getElementById('copyBtn_ocr');
+            const clearBtn_ocr = document.getElementById('clearBtn_ocr');
+            const copyFeedback = document.getElementById('copyFeedback');
+            const toast = document.getElementById('toast');
+
+            let selectedFile = null;
+            let isProcessing = false;
+            let copyTimeout = null;
+            let toastTimeout = null;
+
+            // --- ФУНКЦИЯ ПОСТ-ОБРАБОТКИ ТЕКСТА ---
+            function postProcessText(text) {
+                let lines = text.split('\n');
+                lines = lines.filter(line => line.trim() !== '');
+                if (lines.length < 2) return lines.join('\n');
+
+                let result = [];
+                let currentLine = '';
+
+                for (let i = 0; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if (i === 0) {
+                        currentLine = line;
+                        continue;
+                    }
+                    const endsWithSentenceEnd = /[.!?…]\s*$/.test(currentLine);
+                    if (endsWithSentenceEnd) {
+                        result.push(currentLine);
+                        currentLine = line;
+                    } else {
+                        currentLine += ' ' + line;
+                    }
+                }
+                if (currentLine) result.push(currentLine);
+                return result.join('\n');
+            }
+
+            // --- ФУНКЦИЯ РАСПОЗНАВАНИЯ ---
+            async function recognizeText(file) {
+                if (isProcessing || !file) return;
+
+                isProcessing = true;
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+                progressDiv.textContent = '⏳ Загрузка движка и распознавание...';
+
+                try {
+                    const result = await Tesseract.recognize(
+                        file,
+                        'rus+eng',
+                        {
+                            logger: (m) => {
+                                if (m.status === 'loading tesseract core') {
+                                    progressDiv.textContent = '⏳ Загрузка нейросети...';
+                                }
+                                if (m.status === 'initializing tesseract') {
+                                    progressDiv.textContent = '⏳ Инициализация...';
+                                }
+                                if (m.status === 'recognizing text') {
+                                    progressDiv.textContent = `⏳ Распознавание: ${Math.round(m.progress * 100)}%`;
+                                }
+                            }
+                        }
+                    );
+
+                    const rawText = result.data.text.trim();
+
+                    if (rawText.length === 0) {
+                        resultDiv.textContent = '⚠️ Текст не обнаружен. Попробуйте другое изображение.';
+                        resultDiv.classList.add('show');
+                        resultHeader.style.display = 'none';
+                        progressDiv.textContent = '⚠️ Текст не найден';
+                    } else {
+                        const processedText = postProcessText(rawText);
+                        resultDiv.textContent = processedText;
+                        resultDiv.classList.add('show');
+                        resultHeader.style.display = 'flex';
+                        progressDiv.textContent = '✅ Распознавание завершено';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    progressDiv.textContent = '❌ Ошибка: ' + err.message;
+                    resultDiv.textContent = 'Произошла ошибка. Проверьте консоль.';
+                    resultDiv.classList.add('show');
+                    resultHeader.style.display = 'none';
+                } finally {
+                    isProcessing = false;
+                }
+            }
+
+            // --- ПОКАЗ TOAST ---
+            function showToast(message) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            // --- КОПИРОВАНИЕ ---
+            function copyText() {
+                const text = resultDiv.textContent;
+                if (!text || text === 'Результат появится здесь' || text === '⚠️ Текст не обнаружен. Попробуйте другое изображение.') {
+                    showToast('⚠️ Нет текста для копирования');
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showToast('✅ Скопировано!');
+                    }).catch(() => {
+                        fallbackCopy(text);
+                    });
+                } else {
+                    fallbackCopy(text);
+                }
+            }
+
+            function fallbackCopy(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('✅ Скопировано!');
+                } catch (err) {
+                    console.error('Ошибка копирования:', err);
+                    showToast('❌ Ошибка копирования');
+                }
+                document.body.removeChild(textarea);
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' Б';
+                if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' КБ';
+                if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' МБ';
+                return (bytes / 1073741824).toFixed(1) + ' ГБ';
+            }
+
+            function handleFile(file) {
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                    progressDiv.textContent = '❌ Пожалуйста, выберите изображение (JPG, PNG, BMP, WEBP)';
+                    return;
+                }
+
+                selectedFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.add('show');
+
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    progressDiv.textContent = '✅ Файл загружен. Начинаю распознавание...';
+                    recognizeText(file);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function resetUI() {
+                selectedFile = null;
+                preview.style.display = 'none';
+                preview.src = '';
+                progressDiv.textContent = 'Ожидание загрузки...';
+                resultDiv.classList.remove('show');
+                resultDiv.textContent = '';
+                resultHeader.style.display = 'none';
+                fileInfo.classList.remove('show');
+                fileInput.value = '';
+                isProcessing = false;
+                copyFeedback.classList.remove('show');
+                clearTimeout(copyTimeout);
+            }
+
+            // --- ОБРАБОТЧИК КНОПКИ ОЧИСТИТЬ ---
+            clearBtn_ocr.addEventListener('click', function () {
+                resetUI();
+            });
+
+            // --- DRAG & DROP ---
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropZone.classList.add('drag-over');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('drag-over');
+            }
+
+            dropZone.addEventListener('drop', function (e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            }, false);
+
+            dropZone.addEventListener('click', function () {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFile(file);
+                } else {
+                    resetUI();
+                }
+            });
+
+            fileRemove.addEventListener('click', function (e) {
+                e.stopPropagation();
+                resetUI();
+            });
+
+            copyBtn_ocr.addEventListener('click', copyText);
+
+            document.addEventListener('drop', function (e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('image/')) {
+                    if (!e.target.closest('#dropZone')) {
+                        handleFile(files[0]);
+                    }
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html> 
